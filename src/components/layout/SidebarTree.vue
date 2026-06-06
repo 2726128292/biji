@@ -67,9 +67,11 @@ function convertMirrorToDisplay(mirrorTree: any[]): (TreeNode & { isFolder: bool
 async function loadQuestionBanks() {
   const banks = await questionService.getBanks()
   const result: (TreeNode & { isFolder: boolean })[] = []
-  
+
   for (const bank of banks) {
     const count = await questionService.getBankQuestionCount(bank.id)
+    // 加载该题库的章节树
+    const chapters = await questionService.getChapterTree(bank.id)
     result.push({
       id: bank.id,
       name: bank.name,
@@ -78,9 +80,9 @@ async function loadQuestionBanks() {
       parentId: null,
       depth: 0,
       noteCount: count,
-      children: []
+      children: chapters.length > 0 ? convertChapterToTreeNode(chapters) : undefined
     })
-    
+
     // 加载错题本列表
     const wrongBooks = await wrongBookService.getAllWrongBooks()
     for (const wb of wrongBooks.filter(wb => wb.sourceId === bank.id || wb.sourceType === 'bank')) {
@@ -97,8 +99,21 @@ async function loadQuestionBanks() {
       })
     }
   }
-  
+
   treeData.value = result
+}
+
+/** 将 getChapterTree 返回的数据转换为 TreeNode 格式 */
+function convertChapterToTreeNode(chapters: any[]): (TreeNode & { isFolder: boolean })[] {
+  return chapters.map(ch => ({
+    id: ch.id,
+    name: ch.name,
+    isFolder: true,
+    sortKey: ch.sortKey ?? 0,
+    parentId: ch.parentId,
+    depth: 1,
+    children: ch.children?.length > 0 ? convertChapterToTreeNode(ch.children) : undefined
+  }))
 }
 
 function toggleExpand(id: string) {
@@ -115,7 +130,7 @@ function isExpanded(id: string): boolean {
 
 function selectItem(item: any) {
   selectedId.value = item.id
-  
+
   if (!item.isFolder) {
     // 笔记节点
     ui.editingNoteId = item.id
@@ -125,12 +140,12 @@ function selectItem(item: any) {
     const wbId = item.id.replace('wb_', '')
     router.push(`/wrongbook/${wbId}`)
   } else {
-    // 题库或章节
-    ui.selectedBankId = item.id
-    
-    if (ui.currentModule === 'questions' || route.path.startsWith('/questions')) {
-      router.push(`/questions/${item.id}`)
+    // 题库或章节：始终执行路由跳转，同时切换模块状态
+    if (ui.currentModule !== 'questions') {
+      ui.currentModule = 'questions'
     }
+    ui.selectedBankId = item.id
+    router.push(`/questions/${item.id}`)
   }
 }
 
