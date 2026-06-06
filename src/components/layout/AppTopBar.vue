@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUIStore } from '@/stores/uiStore'
 import { useSettingsStore } from '@/stores/settingsStore'
-import { Menu, Search, Settings, BookOpen, Library } from 'lucide-vue-next'
+import { Menu, Settings, BookOpen, Library } from 'lucide-vue-next'
 
 const ui = useUIStore()
 const settings = useSettingsStore()
@@ -38,7 +38,7 @@ function switchToQuestions() {
           @click="switchToNotes()"
         >
           <BookOpen :size="16" />
-          <span>笔记</span>
+          <span>费曼笔记</span>
         </button>
         <button
           class="module-tab"
@@ -46,15 +46,12 @@ function switchToQuestions() {
           @click="switchToQuestions()"
         >
           <Library :size="16" />
-          <span>题库</span>
+          <span>背题刷题</span>
         </button>
       </div>
     </div>
 
     <div class="topbar-right">
-      <button class="topbar-btn" title="搜索（开发中）">
-        <Search :size="18" />
-      </button>
       <button class="topbar-btn" @click="ui.showSettings = true" title="设置">
         <Settings :size="18" />
       </button>
@@ -121,9 +118,7 @@ function switchToQuestions() {
 
 .module-switcher {
   display: flex;
-  background: var(--color-gray-100);
-  border-radius: var(--border-radius);
-  padding: 2px;
+  gap: 8px;
   margin-left: 8px;
 }
 
@@ -135,15 +130,17 @@ function switchToQuestions() {
   border-radius: 6px;
   font-size: 13px;
   font-weight: 500;
-  color: var(--text-secondary);
+  background: white;
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
   transition: all var(--transition-fast);
 }
 .module-tab:hover {
-  color: var(--text-primary);
+  background: var(--color-primary-bg);
 }
 .module-tab.active {
-  background: var(--bg-secondary);
-  color: var(--color-primary);
-  box-shadow: var(--shadow-sm);
+  background: var(--color-primary);
+  color: white;
+  border: none;
 }
 </style>

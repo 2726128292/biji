@@ -4,7 +4,6 @@ import { useRoute } from 'vue-router'
 import { useUIStore } from '@/stores/uiStore'
 import SidebarTree from '@/components/layout/SidebarTree.vue'
 import NoteEditor from '@/components/notes/NoteEditor.vue'
-import EmptyState from '@/components/common/EmptyState.vue'
 
 const route = useRoute()
 const ui = useUIStore()
@@ -34,13 +33,16 @@ watch(noteId, (id) => {
       <NoteEditor v-if="hasNoteSelected" :note-id="noteId!" />
 
       <!-- 空状态 -->
-      <EmptyState
-        v-else
-        title="选择或创建笔记"
-        description="从左侧目录选择一个笔记开始阅读和编辑，或创建一条新笔记"
-        action-text="新建笔记"
-        @action="handleCreateNote"
-      />
+      <div v-else class="empty-state-custom">
+        <div class="empty-content">
+          <h3 class="empty-title">建立属于自己的离线知识库</h3>
+          <p class="empty-desc">从左侧目录新建文件或笔记，使用费曼模板整理知识。</p>
+        </div>
+        <div class="empty-actions">
+          <button class="btn-primary" @click="handleCreateNote">新建笔记</button>
+          <button class="btn-outline" @click="handleImportBackup">导入备份</button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -64,6 +66,10 @@ export default {
         root = await noteService.createFolder(null, '我的笔记', 'notes')
       }
       return root
+    },
+    handleImportBackup() {
+      // TODO: 实现导入备份功能
+      console.log('导入备份')
     }
   }
 }
@@ -85,6 +91,69 @@ export default {
   height: 100%;
   background: var(--bg-primary);
   transition: margin-left var(--transition-normal);
+}
+
+/* 自定义空状态 */
+.empty-state-custom {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+  min-height: 300px;
+}
+.empty-content {
+  max-width: 360px;
+}
+.empty-title {
+  font-family: var(--font-serif);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+}
+.empty-desc {
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+.empty-actions {
+  display: flex;
+  gap: 12px;
+}
+.btn-primary {
+  padding: 10px 24px;
+  background: var(--color-primary);
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  box-shadow: var(--shadow-sm);
+}
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+  background: var(--color-primary-light);
+}
+.btn-outline {
+  padding: 10px 24px;
+  background: white;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 500;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+}
+.btn-outline:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
 }
 
 /* 移动端全宽 */

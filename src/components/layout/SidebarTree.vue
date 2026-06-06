@@ -15,7 +15,8 @@ import {
   Plus,
   MoreVertical,
   Library,
-  BookX
+  BookX,
+  Search
 } from 'lucide-vue-next'
 
 const ui = useUIStore()
@@ -26,6 +27,7 @@ const treeData = ref<(TreeNode & { isFolder: boolean; noteCount?: number })[]>([
 const expandedIds = ref<Set<string>>(new Set())
 const selectedId = ref<string | null>(null)
 const dragNodeId = ref<string | null>(null)
+const searchQuery = ref('')
 
 // 判断当前是否为错题本模式
 const isWrongBookMode = computed(() => route.path.startsWith('/wrongbook'))
@@ -224,6 +226,12 @@ watch(() => [ui.currentModule, route.path], () => {
       </div>
     </div>
 
+    <!-- 搜索框 -->
+    <div class="search-box">
+      <Search :size="14" />
+      <input type="text" v-model="searchQuery" placeholder="搜索目录" class="search-input" />
+    </div>
+
     <div class="sidebar-tree">
       <template v-for="item in treeData" :key="item.id">
         <div
@@ -361,6 +369,33 @@ watch(() => [ui.currentModule, route.path], () => {
 .action-btn:hover {
   background: var(--bg-hover);
   color: var(--color-primary);
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 12px;
+  padding: 0 10px;
+  background: var(--color-gray-100);
+  border-radius: var(--border-radius);
+  flex-shrink: 0;
+}
+.search-box .search-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  color: var(--text-primary);
+  outline: none;
+  padding: 7px 0;
+}
+.search-box .search-input::placeholder {
+  color: var(--text-muted);
+}
+.search-box :deep(svg) {
+  color: var(--text-muted);
+  flex-shrink: 0;
 }
 
 .sidebar-tree {

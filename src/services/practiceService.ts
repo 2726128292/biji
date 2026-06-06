@@ -191,6 +191,7 @@ export class PracticeService {
 
     return {
       sessionId,
+      startedAt: session.startedAt,
       totalQuestions: answers.length,
       correctCount,
       wrongCount,

@@ -132,6 +132,12 @@ export interface AppSettingsData {
   quizOrder: 'random' | 'sequential'
   autoAdvanceOnCorrect: boolean
   sidebarWidth: number
+  themeMode?: string
+  lineHeight?: number
+  typewriterMode?: boolean
+  focusMode?: boolean
+  autoSave?: boolean
+  historyVersions?: number
 }
 
 export interface AppSettings {
@@ -177,11 +183,15 @@ export interface PracticeConfig {
 // ===== 练习报告 =====
 export interface PracticeReport {
   sessionId: string
+  startedAt: number
+  completedAt?: number
   totalQuestions: number
   correctCount: number
   wrongCount: number
   unknownCount: number
   accuracy: number
+  targetWrongBookName?: string
+  sourceName?: string
   answers: (PracticeAnswer & { questionContent: string })[]
 }
 

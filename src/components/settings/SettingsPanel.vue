@@ -3,7 +3,6 @@ import { ref, computed, onMounted } from 'vue'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useUIStore } from '@/stores/uiStore'
 import { backupService } from '@/services/backupService'
-import BackupRestorePanel from './BackupRestorePanel.vue'
 
 const emit = defineEmits<{
   close: []
@@ -15,12 +14,14 @@ const uiStore = useUIStore()
 const s = computed(() => settingsStore.settings)
 
 // 本地编辑值
-const defaultModule = ref(s.value.defaultModule)
-const autoSaveInterval = ref(s.value.autoSaveInterval)
+const themeMode = ref(s.value.themeMode || 'light')
 const editorFontSize = ref(s.value.editorFontSize)
-const editorTheme = ref(s.value.editorTheme)
-const quizOrder = ref(s.value.quizOrder)
-const autoAdvanceOnCorrect = ref(s.value.autoAdvanceOnCorrect)
+const lineHeight = ref(s.value.lineHeight || 1.6)
+const typewriterMode = ref(s.value.typewriterMode || false)
+const focusMode = ref(s.value.focusMode || false)
+const sidebarWidth = ref(s.value.sidebarWidth || 260)
+const autoSave = ref(s.value.autoSave !== false)
+const historyVersions = ref(s.value.historyVersions || 10)
 
 // 存储信息
 const storageUsed = ref('加载中...')
@@ -33,31 +34,31 @@ onMounted(async () => {
   storageQuota.value = estimate.quota
 })
 
-async function saveAll() {
-  await settingsStore.saveSettings({
-    defaultModule: defaultModule.value,
-    autoSaveInterval: autoSaveInterval.value,
-    editorFontSize: editorFontSize.value,
-    editorTheme: editorTheme.value,
-    quizOrder: quizOrder.value,
-    autoAdvanceOnCorrect: autoAdvanceOnCorrect.value
-  })
+async function saveSetting(key: string, value: any) {
+  await settingsStore.saveSettings({ [key]: value })
 }
 
-async function handleBackup() {
-  uiStore.showBackupRestore = true
+function handleBackup() {
+  alert('导出完整备份功能：将下载包含所有数据的JSON备份文件（功能预留）')
+}
+
+function handleRestore() {
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.accept = '.json'
+  input.onchange = async (e: any) => {
+    const file = e.target.files[0]
+    if (file) {
+      alert(`恢复备份功能：将从文件 "${file.name}" 恢复数据（功能预留）`)
+    }
+  }
+  input.click()
 }
 
 async function requestPersistence() {
   const granted = await backupService.requestPersistence()
   persistenceGranted.value = granted
 }
-
-// PWA 更新状态
-const pwaUpdateStatus = computed(() => {
-  if (uiStore.showUpdatePrompt) return '有可用更新，请刷新页面'
-  return '已是最新版本'
-})
 
 function handleClose() {
   emit('close')
@@ -78,141 +79,104 @@ function handleClose() {
         </button>
       </div>
 
-      <!-- 内容区 -->
+      <!-- 内容区 - 列表形式 -->
       <div class="settings-body">
-        <!-- 常规设置 -->
-        <section class="settings-section">
-          <h3 class="section-title">常规设置</h3>
+        <!-- 外观设置 -->
+        <div class="settings-list">
+          <h3 class="list-section-title">外观</h3>
 
-          <div class="setting-item">
-            <label class="setting-label">默认模块</label>
-            <select v-model="defaultModule" @change="saveAll" class="setting-select">
-              <option value="notes">笔记</option>
-              <option value="questions">题库</option>
-            </select>
+          <div class="setting-row" @click="themeMode = themeMode === 'light' ? 'dark' : 'light'; saveSetting('themeMode', themeMode)">
+            <span class="setting-label">主题模式</span>
+            <span class="setting-value clickable">{{ themeMode === 'light' ? '浅色' : '深色' }}</span>
           </div>
 
-          <div class="setting-item">
-            <label class="setting-label">自动保存间隔</label>
-            <div class="setting-input-group">
-              <input
-                type="number"
-                v-model.number="autoSaveInterval"
-                @change="saveAll"
-                min="100"
-                max="5000"
-                step="100"
-                class="setting-input setting-input-sm"
-              />
-              <span class="setting-unit">ms</span>
-            </div>
+          <div class="setting-row">
+            <span class="setting-label">编辑器字号</span>
+            <span class="setting-value clickable">{{ editorFontSize }}px</span>
           </div>
-        </section>
+
+          <div class="setting-row">
+            <span class="setting-label">行间距</span>
+            <span class="setting-value clickable">{{ lineHeight }}</span>
+          </div>
+        </div>
 
         <!-- 编辑器设置 -->
-        <section class="settings-section">
-          <h3 class="section-title">编辑器设置</h3>
+        <div class="settings-list">
+          <h3 class="list-section-title">编辑器</h3>
 
-          <div class="setting-item">
-            <label class="setting-label">字体大小</label>
-            <div class="setting-input-group">
-              <input
-                type="number"
-                v-model.number="editorFontSize"
-                @change="saveAll"
-                min="12"
-                max="24"
-                class="setting-input setting-input-sm"
-              />
-              <span class="setting-unit">px</span>
+          <div class="setting-row" @click="typewriterMode = !typewriterMode; saveSetting('typewriterMode', typewriterMode)">
+            <span class="setting-label">打字机模式</span>
+            <span class="setting-value clickable">{{ typewriterMode ? '已开启' : '已关闭' }}</span>
+          </div>
+
+          <div class="setting-row" @click="focusMode = !focusMode; saveSetting('focusMode', focusMode)">
+            <span class="setting-label">专注模式</span>
+            <span class="setting-value clickable">{{ focusMode ? '已开启' : '已关闭' }}</span>
+          </div>
+
+          <div class="setting-row">
+            <span class="setting-label">目录栏宽度</span>
+            <span class="setting-value clickable">{{ sidebarWidth }}px</span>
+          </div>
+        </div>
+
+        <!-- 数据与保存 -->
+        <div class="settings-list">
+          <h3 class="list-section-title">数据与保存</h3>
+
+          <div class="setting-row" @click="autoSave = !autoSave; saveSetting('autoSave', autoSave)">
+            <span class="setting-label">自动保存</span>
+            <span class="setting-value clickable">{{ autoSave ? '已开启' : '已关闭' }}</span>
+          </div>
+
+          <div class="setting-row">
+            <span class="setting-label">历史版本</span>
+            <span class="setting-value clickable">保留 {{ historyVersions }} 个版本</span>
+          </div>
+        </div>
+
+        <!-- 数据安全区域 - 两列卡片布局 -->
+        <div class="data-safety-section">
+          <h3 class="list-section-title">数据安全</h3>
+
+          <div class="backup-cards">
+            <div class="backup-card">
+              <button class="backup-btn primary" @click="handleBackup">
+                导出完整备份
+              </button>
+              <p class="backup-desc">下载包含所有笔记和题库的JSON文件</p>
+            </div>
+
+            <div class="backup-card">
+              <button class="backup-btn secondary" @click="handleRestore">
+                恢复备份
+              </button>
+              <p class="backup-desc">选择备份文件恢复数据</p>
             </div>
           </div>
 
-          <div class="setting-item">
-            <label class="setting-label">编辑器主题</label>
-            <select v-model="editorTheme" @change="saveAll" class="setting-select">
-              <option value="light">浅色</option>
-              <option value="dark">深色</option>
-            </select>
-          </div>
-        </section>
-
-        <!-- 练习设置 -->
-        <section class="settings-section">
-          <h3 class="section-title">练习设置</h3>
-
-          <div class="setting-item">
-            <label class="setting-label">默认刷题顺序</label>
-            <div class="radio-group">
-              <label class="radio-option">
-                <input type="radio" v-model="quizOrder" value="random" @change="saveAll" />
-                <span>随机</span>
-              </label>
-              <label class="radio-option">
-                <input type="radio" v-model="quizOrder" value="sequential" @change="saveAll" />
-                <span>顺序</span>
-              </label>
-            </div>
+          <!-- 存储状态 -->
+          <div class="storage-status">
+            <span class="storage-text">已用 {{ storageUsed }} · 可用空间 {{ storageQuota }}</span>
           </div>
 
-          <div class="setting-item setting-item-row">
-            <label class="setting-label">答对后自动跳转</label>
-            <label class="toggle-switch">
-              <input type="checkbox" v-model="autoAdvanceOnCorrect" @change="saveAll" />
-              <span class="toggle-slider"></span>
-            </label>
-          </div>
-        </section>
-
-        <!-- 数据管理 -->
-        <section class="settings-section">
-          <h3 class="section-title">数据管理</h3>
-
-          <div class="setting-actions">
-            <button class="btn btn-primary" @click="handleBackup">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                <polyline points="7 10 12 15 17 10"></polyline>
-                <line x1="12" y1="15" x2="12" y2="3"></line>
-              </svg>
-              备份全部数据
-            </button>
-          </div>
-
-          <div class="storage-info">
-            <span class="storage-label">存储空间使用量：</span>
-            <span class="storage-value">{{ storageUsed }} / {{ storageQuota }}</span>
-          </div>
-
-          <div class="setting-actions">
-            <button class="btn btn-secondary" @click="requestPersistence">
+          <!-- 申请持久化存储 -->
+          <div class="persistence-action">
+            <button class="persistence-btn" @click="requestPersistence">
               申请持久化存储
             </button>
             <span v-if="persistenceGranted !== null" class="persistence-status" :class="{ granted: persistenceGranted }">
               {{ persistenceGranted ? '已授予' : '未授予' }}
             </span>
           </div>
-        </section>
 
-        <!-- 关于 -->
-        <section class="settings-section">
-          <h3 class="section-title">关于</h3>
-
-          <div class="about-info">
-            <div class="about-row">
-              <span class="about-label">版本号</span>
-              <span class="about-value">V1.0.0</span>
-            </div>
-            <div class="about-row">
-              <span class="about-label">PWA 更新状态</span>
-              <span class="about-value">{{ pwaUpdateStatus }}</span>
-            </div>
+          <!-- 红色提示文字 -->
+          <div class="safety-warning">
+            ⚠️ 数据仅保存在当前浏览器中，请定期导出备份。
           </div>
-        </section>
+        </div>
       </div>
-
-      <!-- 嵌入的备份恢复面板（通过独立面板打开） -->
-      <BackupRestorePanel v-if="uiStore.showBackupRestore" @close="uiStore.showBackupRestore = false" />
     </div>
   </div>
 </template>
@@ -229,7 +193,7 @@ function handleClose() {
 }
 
 .settings-panel {
-  width: 360px;
+  width: 420px;
   max-width: 90vw;
   height: 100%;
   background: var(--bg-secondary);
@@ -263,6 +227,9 @@ function handleClose() {
   border-radius: var(--border-radius-sm);
   color: var(--text-muted);
   transition: background var(--transition-fast), color var(--transition-fast);
+  background: transparent;
+  border: none;
+  cursor: pointer;
 }
 
 .settings-close-btn:hover {
@@ -276,199 +243,141 @@ function handleClose() {
   padding: 8px 0;
 }
 
-.settings-section {
-  padding: 16px 20px;
+/* 列表形式的设置项 */
+.settings-list {
+  padding: 4px 0;
   border-bottom: 1px solid var(--border-color);
 }
 
-.settings-section:last-child {
-  border-bottom: none;
-}
-
-.section-title {
-  font-size: 13px;
+.list-section-title {
+  font-size: 12px;
   font-weight: 600;
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  margin-bottom: 12px;
+  padding: 12px 20px 8px;
+  margin: 0;
 }
 
-.setting-item {
-  margin-bottom: 14px;
-}
-
-.setting-item:last-child {
-  margin-bottom: 0;
-}
-
-.setting-item-row {
+.setting-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  padding: 14px 20px;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+  border-bottom: 1px solid var(--color-gray-100);
+}
+
+.setting-row:last-child {
+  border-bottom: none;
+}
+
+.setting-row:hover {
+  background: var(--bg-hover);
 }
 
 .setting-label {
-  display: block;
-  font-size: 14px;
-  color: var(--text-secondary);
-  margin-bottom: 6px;
-}
-
-.setting-item-row .setting-label {
-  margin-bottom: 0;
-}
-
-.setting-select {
-  width: 100%;
-  padding: 8px 12px;
-  font-size: 14px;
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-sm);
-  background: white;
-  color: var(--text-primary);
-  cursor: pointer;
-}
-
-.setting-input-group {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.setting-input {
-  width: 100%;
-  max-width: 120px;
-  padding: 8px 12px;
-  font-size: 14px;
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-sm);
-  background: white;
-  color: var(--text-primary);
-}
-
-.setting-input-sm {
-  max-width: 80px;
-}
-
-.setting-unit {
-  font-size: 13px;
-  color: var(--text-muted);
-  white-space: nowrap;
-}
-
-/* Radio */
-.radio-group {
-  display: flex;
-  gap: 16px;
-}
-
-.radio-option {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
   font-size: 14px;
   color: var(--text-primary);
-}
-
-.radio-option input[type="radio"] {
-  accent-color: var(--color-primary);
-}
-
-/* Toggle Switch */
-.toggle-switch {
-  position: relative;
-  display: inline-block;
-  width: 44px;
-  height: 24px;
-  cursor: pointer;
-}
-
-.toggle-switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-.toggle-slider {
-  position: absolute;
-  inset: 0;
-  background-color: var(--color-gray-300);
-  border-radius: 12px;
-  transition: background-color var(--transition-fast);
-}
-
-.toggle-slider::before {
-  content: '';
-  position: absolute;
-  height: 18px;
-  width: 18px;
-  left: 3px;
-  bottom: 3px;
-  background-color: white;
-  border-radius: 50%;
-  transition: transform var(--transition-fast);
-}
-
-.toggle-switch input:checked + .toggle-slider {
-  background-color: var(--color-primary);
-}
-
-.toggle-switch input:checked + .toggle-slider::before {
-  transform: translateX(20px);
-}
-
-/* Buttons */
-.setting-actions {
-  margin-top: 4px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  font-size: 13px;
   font-weight: 500;
-  border-radius: var(--border-radius-sm);
-  transition: all var(--transition-fast);
+}
+
+.setting-value {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.setting-value.clickable {
+  color: var(--color-primary);
+  font-weight: 500;
+}
+
+/* 数据安全区域 */
+.data-safety-section {
+  padding: 4px 0;
+}
+
+.backup-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 12px 20px;
+}
+
+.backup-card {
+  background: white;
+  border-radius: var(--border-radius-lg);
+  border: 1px solid var(--border-color);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.backup-btn {
+  padding: 10px 16px;
+  border-radius: var(--border-radius);
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
+  transition: all var(--transition-fast);
   border: none;
 }
 
-.btn-primary {
+.backup-btn.primary {
   background: var(--color-primary);
   color: white;
 }
-
-.btn-primary:hover {
+.backup-btn.primary:hover {
   background: var(--color-primary-light);
 }
 
-.btn-secondary {
+.backup-btn.secondary {
+  background: white;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+.backup-btn.secondary:hover {
+  background: var(--bg-hover);
+}
+
+.backup-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.storage-status {
+  padding: 12px 20px;
+}
+
+.storage-text {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.persistence-action {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 20px;
+}
+
+.persistence-btn {
+  padding: 8px 16px;
+  border-radius: var(--border-radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
   background: var(--bg-hover);
   color: var(--text-secondary);
   border: 1px solid var(--border-color);
 }
-
-.btn-secondary:hover {
+.persistence-btn:hover {
   background: var(--color-gray-100);
-}
-
-.storage-info {
-  margin-top: 12px;
-  font-size: 13px;
-  color: var(--text-secondary);
-}
-
-.storage-value {
-  font-weight: 500;
-  color: var(--text-primary);
 }
 
 .persistence-status {
@@ -484,27 +393,16 @@ function handleClose() {
   color: var(--color-success);
 }
 
-/* About */
-.about-info {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.about-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 14px;
-}
-
-.about-label {
-  color: var(--text-secondary);
-}
-
-.about-value {
-  color: var(--text-primary);
-  font-weight: 500;
+/* 红色提示文字 */
+.safety-warning {
+  margin: 12px 20px 20px;
+  padding: 12px 16px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: var(--border-radius);
+  color: #dc2626;
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 @keyframes fadeIn {

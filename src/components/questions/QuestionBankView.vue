@@ -11,12 +11,24 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   practice: [sourceType: string, sourceId: string]
+  batchImport: []
 }>()
 
 const chapterTree = ref<any[]>([])
 const questions = ref<Question[]>([])
 const selectedFolderId = ref<string | null>(props.folderId || null)
 const loading = ref(false)
+
+// 面包屑数据
+const bankName = ref('')
+const breadcrumbPath = computed(() => {
+  const path: string[] = ['我的题库']
+  if (bankName.value) path.push(bankName.value)
+  if (selectedFolderId.value && currentFolderName.value !== '全部题目') {
+    path.push(currentFolderName.value)
+  }
+  return path
+})
 
 const currentFolderName = computed(() => {
   function findName(nodes: any[], id: string): string {
@@ -35,6 +47,10 @@ const currentFolderName = computed(() => {
 
 async function loadChapterTree() {
   chapterTree.value = await questionService.getChapterTree(props.bankId)
+  // 获取题库名称用于面包屑
+  const banks = await questionService.getBanks()
+  const bank = banks.find((b: any) => b.id === props.bankId)
+  if (bank) bankName.value = bank.name
 }
 
 async function loadQuestions() {
@@ -74,6 +90,10 @@ async function handleCreateChapter(parentId: string | null) {
 
 async function handleCreateQuestion() {
   // 通过事件或store触发弹窗
+}
+
+function handleBatchImport() {
+  emit('batchImport')
 }
 
 function handlePractice() {
@@ -146,12 +166,26 @@ watch(() => props.folderId, async (val) => {
 
     <!-- 右侧题目列表 -->
     <main class="questions-panel">
+      <!-- 面包屑导航 -->
+      <nav class="breadcrumb-nav">
+        <span
+          v-for="(item, index) in breadcrumbPath"
+          :key="index"
+          class="breadcrumb-item"
+        >
+          <span v-if="index > 0" class="separator"> &gt; </span>
+          <span class="breadcrumb-text">{{ item }}</span>
+        </span>
+      </nav>
+
+      <!-- 工具栏 -->
       <div class="panel-header">
         <h3>{{ currentFolderName }}</h3>
         <span class="question-count">共 {{ questions.length }} 道题</span>
         <div class="panel-actions">
           <button class="btn btn-primary btn-sm" @click="handleCreateQuestion">+ 新建题目</button>
-          <button class="btn btn-accent btn-sm" @click="handlePractice">▶ 开始练习</button>
+          <button class="btn btn-outline btn-sm" @click="handleBatchImport">↑ 批量导入</button>
+          <button class="btn btn-outline-primary btn-sm" @click="handlePractice">▶ 开始刷题</button>
         </div>
       </div>
 
@@ -300,6 +334,34 @@ watch(() => props.folderId, async (val) => {
   overflow: hidden;
 }
 
+/* 面包屑导航 */
+.breadcrumb-nav {
+  display: flex;
+  align-items: center;
+  padding: 12px 24px 8px;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.breadcrumb-item {
+  display: inline-flex;
+  align-items: center;
+}
+
+.breadcrumb-text {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.breadcrumb-item:last-child .breadcrumb-text {
+  color: var(--color-primary);
+}
+
+.separator {
+  margin: 0 6px;
+  color: var(--text-muted);
+}
+
 .panel-header {
   display: flex;
   align-items: center;
@@ -367,6 +429,26 @@ watch(() => props.folderId, async (val) => {
 .btn-primary {
   background: var(--color-primary);
   color: white;
+}
+
+.btn-outline {
+  background: white;
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.btn-outline:hover:not(:disabled) {
+  background: var(--bg-hover);
+}
+
+.btn-outline-primary {
+  background: white;
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+}
+
+.btn-outline-primary:hover:not(:disabled) {
+  background: var(--color-primary-bg);
 }
 
 .btn-accent {

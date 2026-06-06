@@ -2,7 +2,6 @@
 import { ref, onMounted, computed } from 'vue'
 import { practiceService } from '@/services/practiceService'
 import type { PracticeReport as ReportType } from '@/types/database'
-import { formatSubmittedAnswer } from '@/utils/questionJudge'
 
 const props = defineProps<{
   sessionId: string
@@ -11,6 +10,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   back: []
   retry: [sessionId: string]
+  retrySame: []
+  viewWrongBook: [sessionId: string]
 }>()
 
 const report = ref<ReportType | null>(null)
@@ -35,12 +36,37 @@ const accuracyColor = computed(() => {
   return 'low'
 })
 
+// 计算总用时
+const totalTime = computed(() => {
+  if (!report.value) return '0分0秒'
+  const start = new Date(report.value.startedAt).getTime()
+  const end = new Date(report.value.completedAt).getTime()
+  const diffMs = end - start
+  const minutes = Math.floor(diffMs / 60000)
+  const seconds = Math.floor((diffMs % 60000) / 1000)
+  return `${minutes}分${seconds}秒`
+})
+
+// 获取目标错题本名称
+const targetWrongBookName = computed(() => {
+  if (!report.value) return ''
+  return report.value.targetWrongBookName || '错题本'
+})
+
 function handleBack() {
   emit('back')
 }
 
 function handleRetry() {
   emit('retry', props.sessionId)
+}
+
+function handleRetrySame() {
+  emit('retrySame')
+}
+
+function handleViewWrongBook() {
+  emit('viewWrongBook', props.sessionId)
 }
 
 onMounted(() => {
@@ -55,63 +81,57 @@ onMounted(() => {
     </div>
 
     <template v-else-if="report">
-      <!-- 标题 -->
-      <div class="report-header">
-        <h2 class="report-title">📊 本轮练习结果</h2>
-      </div>
+      <!-- 居中白色卡片容器 -->
+      <div class="report-card">
+        <!-- 标题 -->
+        <div class="report-header">
+          <h2 class="report-title">本轮刷题完成</h2>
+          <p class="report-subtitle">来源：{{ report.sourceName || '未知来源' }}</p>
+        </div>
 
-      <!-- 统计卡片区 -->
-      <div class="stats-grid">
-        <div class="stat-card total">
-          <span class="stat-number">{{ report.totalQuestions }}</span>
-          <span class="stat-label">总题数</span>
-        </div>
-        <div class="stat-card correct">
-          <span class="stat-number">{{ report.correctCount }}</span>
-          <span class="stat-label">正确数</span>
-        </div>
-        <div class="stat-card wrong">
-          <span class="stat-number">{{ report.wrongCount }}</span>
-          <span class="stat-label">错误数</span>
-        </div>
-        <div class="stat-card accuracy" :class="accuracyColor">
-          <span class="stat-number">{{ report.accuracy }}%</span>
-          <span class="stat-label">正确率</span>
-        </div>
-      </div>
-
-      <!-- 详细列表 -->
-      <div class="detail-section">
-        <h3 class="section-title">详细记录</h3>
-        <div class="answer-list">
-          <div
-            v-for="(ans, idx) in report.answers"
-            :key="ans.id"
-            class="answer-row"
-            :class="ans.result"
-          >
-            <div class="row-left">
-              <span class="row-index">{{ idx + 1 }}</span>
-              <span class="row-result-icon">
-                {{ ans.result === 'correct' ? '✅' : ans.result === 'wrong' ? '❌' : '❓' }}
-              </span>
-              <p class="row-content">{{ ans.questionContent }}</p>
-            </div>
-            <div class="row-right">
-              <span class="row-time">{{ new Date(ans.answeredAt).toLocaleTimeString() }}</span>
-              <span v-if="ans.addedToTarget" class="row-wb-badge">已加入错题本</span>
-            </div>
+        <!-- 统计卡片区 2x3网格 -->
+        <div class="stats-grid">
+          <div class="stat-card total">
+            <span class="stat-number">{{ report.totalQuestions }}</span>
+            <span class="stat-label">本轮总数</span>
+          </div>
+          <div class="stat-card correct">
+            <span class="stat-number">{{ report.correctCount }}</span>
+            <span class="stat-label">答对</span>
+          </div>
+          <div class="stat-card wrong">
+            <span class="stat-number">{{ report.wrongCount }}</span>
+            <span class="stat-label">错误</span>
+          </div>
+          <div class="stat-card accuracy" :class="accuracyColor">
+            <span class="stat-number">{{ report.accuracy }}%</span>
+            <span class="stat-label">正确率</span>
+          </div>
+          <div class="stat-card time">
+            <span class="stat-number">{{ totalTime }}</span>
+            <span class="stat-label">总用时</span>
+          </div>
+          <div class="stat-card wrongbook">
+            <span class="stat-number">{{ targetWrongBookName }}</span>
+            <span class="stat-label">已入错题本</span>
           </div>
         </div>
-      </div>
 
-      <!-- 操作按钮区 -->
-      <div class="action-section">
-        <button class="btn btn-secondary" @click="handleBack">← 返回题库</button>
-        <button class="btn btn-accent" @click="handleRetry">🔄 再练一轮</button>
-        <button class="btn btn-primary" @click="$router.push('/wrongbook/' + sessionId)">
-          📕 查看错题本
-        </button>
+        <!-- 操作按钮区 - 4个按钮 -->
+        <div class="action-section">
+          <button class="btn btn-primary" @click="handleRetry">
+            刷练"{{ targetWrongBookName }}"
+          </button>
+          <button class="btn btn-outline" @click="handleViewWrongBook">
+            查看错题本
+          </button>
+          <button class="btn btn-secondary" @click="handleRetrySame">
+            重新刷本题
+          </button>
+          <button class="btn btn-secondary" @click="handleBack">
+            返回目录
+          </button>
+        </div>
       </div>
     </template>
 
@@ -130,7 +150,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 28px;
+  justify-content: center;
 }
 
 .loading-state,
@@ -140,29 +160,47 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   gap: 16px;
-  flex: 1;
   color: var(--text-muted);
   font-size: 15px;
+}
+
+/* 居中白色卡片容器 */
+.report-card {
+  max-width: 680px;
+  width: 100%;
+  background: white;
+  border-radius: var(--border-radius-xl);
+  box-shadow: var(--shadow-lg);
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
 }
 
 /* 标题 */
 .report-header {
   text-align: center;
 }
+
 .report-title {
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 700;
   color: var(--text-primary);
+  margin: 0 0 8px;
+}
+
+.report-subtitle {
+  font-size: 14px;
+  color: var(--text-muted);
   margin: 0;
 }
 
-/* 统计卡片 */
+/* 统计卡片 2x3网格 */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 16px;
   width: 100%;
-  max-width: 720px;
 }
 
 .stat-card {
@@ -187,8 +225,15 @@ onMounted(() => {
   border-top-color: var(--color-error);
 }
 .stat-card.accuracy {
-  border-top-color: var(--color-accent);
+  border-top-color: #f59e0b;
 }
+.stat-card.time {
+  border-top-color: #8b5cf6;
+}
+.stat-card.wrongbook {
+  border-top-color: #ec4899;
+}
+
 .stat-card.accuracy.high {
   background: #f0fdf4;
 }
@@ -200,124 +245,22 @@ onMounted(() => {
 }
 
 .stat-number {
-  font-size: 32px;
+  font-size: 28px;
   font-weight: 700;
   line-height: 1.2;
+  word-break: break-word;
 }
 .stat-card.total .stat-number { color: #1e3a5f; }
 .stat-card.correct .stat-number { color: var(--color-success); }
 .stat-card.wrong .stat-number { color: var(--color-error); }
-.stat-card.accuracy .stat-number { color: var(--color-accent-dark); }
+.stat-card.accuracy .stat-number { color: #f59e0b; }
+.stat-card.time .stat-number { color: #8b5cf6; }
+.stat-card.wrongbook .stat-number { color: #ec4899; font-size: 16px; }
 
 .stat-label {
   font-size: 13px;
   color: var(--text-muted);
   font-weight: 500;
-}
-
-/* 详细列表 */
-.detail-section {
-  width: 100%;
-  max-width: 720px;
-}
-
-.section-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin: 0 0 12px;
-  padding-bottom: 8px;
-  border-bottom: 2px solid var(--border-color);
-}
-
-.answer-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.answer-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-  border-radius: var(--border-radius);
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-left: 3px solid transparent;
-  transition: box-shadow var(--transition-fast);
-  gap: 12px;
-  flex-wrap: wrap;
-}
-.answer-row:hover {
-  box-shadow: var(--shadow-md);
-}
-.answer-row.correct {
-  border-left-color: var(--color-success);
-}
-.answer-row.wrong {
-  border-left-color: var(--color-error);
-}
-
-.row-left {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-  flex: 1;
-}
-
-.row-index {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background: var(--color-gray-100);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  flex-shrink: 0;
-}
-
-.row-result-icon {
-  font-size: 16px;
-  flex-shrink: 0;
-}
-
-.row-content {
-  margin: 0;
-  font-size: 14px;
-  color: var(--text-primary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  flex: 1;
-  min-width: 0;
-}
-
-.row-right {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-shrink: 0;
-}
-
-.row-time {
-  font-size: 12px;
-  color: var(--text-muted);
-  white-space: nowrap;
-}
-
-.row-wb-badge {
-  padding: 2px 8px;
-  border-radius: 10px;
-  font-size: 11px;
-  font-weight: 500;
-  background: var(--color-error-bg);
-  color: var(--color-error);
-  white-space: nowrap;
 }
 
 /* 操作按钮 */
@@ -326,6 +269,8 @@ onMounted(() => {
   gap: 12px;
   flex-wrap: wrap;
   justify-content: center;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-color);
 }
 
 .btn {
@@ -334,8 +279,8 @@ onMounted(() => {
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  border: none;
   transition: transform var(--transition-fast), background-color var(--transition-fast);
+  border: none;
 }
 .btn:hover { transform: scale(1.02); }
 
@@ -345,11 +290,14 @@ onMounted(() => {
 }
 .btn-primary:hover { background: var(--color-primary-light); }
 
-.btn-accent {
-  background: var(--color-accent);
-  color: white;
+.btn-outline {
+  background: white;
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
 }
-.btn-accent:hover { background: var(--color-accent-light); }
+.btn-outline:hover {
+  background: var(--color-info-bg);
+}
 
 .btn-secondary {
   background: var(--color-gray-100);
