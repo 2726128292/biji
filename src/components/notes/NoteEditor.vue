@@ -40,10 +40,56 @@ let lastVersionContent = ''
 // ===== 面板状态 =====
 const showVersionPanel = ref(false)
 const restoreConfirm = ref<{ versionId: string; versionContent: string } | null>(null)
+const savedStatus = ref<'saved' | 'saving' | 'unsaved'>('saved')
 
 // ===== 费曼关键字装饰器 =====
-const feynmanMark = EditorView.decorations.compute(['doc'], () => {
-  return Decoration.none
+const FEYNMAN_PATTERNS: Array<{ regex: RegExp; className: string }> = [
+  { regex: /^##\s*问题\s*$/m, className: 'cm-feynman-question' },
+  { regex: /^##\s*重点\s*$/m, className: 'cm-feynman-keypoint' },
+  { regex: /^##\s*解释\s*$/m, className: 'cm-feynman-explain' },
+  { regex: /^##\s*卡壳点\s*$/m, className: 'cm-feynman-blocker' },
+  { regex: /^##\s*类比\s*$/m, className: 'cm-feynman-analogy' },
+  { regex: /^##\s*总结\s*$/m, className: 'cm-feynman-summary' }
+]
+
+const feynmanMark = EditorView.decorations.compute(['doc'], (state) => {
+  const doc = state.doc
+  const widgets: any[] = []
+  const text = doc.toString()
+  let activeClass = ''
+  const lines = text.split('\n')
+
+  for (let i = 0; i < lines.length; i++) {
+    // 检测费曼标题行
+    let matched = false
+    for (const p of FEYNMAN_PATTERNS) {
+      if (p.regex.test(lines[i])) {
+        activeClass = p.className
+        matched = true
+        break
+      }
+    }
+
+    if (!matched && activeClass) {
+      // 检查是否到了下一个非引用内容（新标题或空行后接非引用）
+      if (/^##\s/.test(lines[i])) {
+        activeClass = ''
+      } else if (lines[i] === '' || lines[i].startsWith('>')) {
+        // 继续使用当前颜色（空行或引用内容属于当前区块）
+      } else {
+        // 非引用非空行，结束区块
+        activeClass = ''
+      }
+    }
+
+    if (activeClass) {
+      const from = doc.line(i + 1).from
+      const to = doc.line(i + 1).to
+      widgets.push(Decoration.line({ class: activeClass }).range(from))
+    }
+  }
+
+  return Decoration.set(widgets)
 })
 
 function createFeynmanTheme() {
@@ -78,36 +124,42 @@ function createFeynmanTheme() {
     '&.cm-focused .cm-selectionBackground, ::selection': {
       backgroundColor: 'rgba(232, 168, 56, 0.25) !important'
     },
-    // 费曼关键字高亮样式
+    // 费曼关键字高亮样式（整块彩色背景）
     '.cm-feynman-question': {
-      backgroundColor: '#fef3c7',
-      borderRadius: '3px',
-      padding: '0 2px'
+      backgroundColor: '#dbeafe',
+      borderRadius: '6px',
+      padding: '2px 8px',
+      margin: '2px 0'
     },
     '.cm-feynman-keypoint': {
-      backgroundColor: '#dbeafe',
-      borderRadius: '3px',
-      padding: '0 2px'
+      backgroundColor: '#fef3c7',
+      borderRadius: '6px',
+      padding: '2px 8px',
+      margin: '2px 0'
     },
     '.cm-feynman-explain': {
       backgroundColor: '#dcfce7',
-      borderRadius: '3px',
-      padding: '0 2px'
+      borderRadius: '6px',
+      padding: '2px 8px',
+      margin: '2px 0'
     },
     '.cm-feynman-blocker': {
       backgroundColor: '#fee2e2',
-      borderRadius: '3px',
-      padding: '0 2px'
+      borderRadius: '6px',
+      padding: '2px 8px',
+      margin: '2px 0'
     },
     '.cm-feynman-analogy': {
       backgroundColor: '#f3e8ff',
-      borderRadius: '3px',
-      padding: '0 2px'
+      borderRadius: '6px',
+      padding: '2px 8px',
+      margin: '2px 0'
     },
     '.cm-feynman-summary': {
       backgroundColor: '#e0f2fe',
-      borderRadius: '3px',
-      padding: '0 2px'
+      borderRadius: '6px',
+      padding: '2px 8px',
+      margin: '2px 0'
     },
     // 双向链接高亮
     '.cm-wikilink': {
@@ -192,8 +244,11 @@ async function initEditor() {
 // ===== 自动保存（500ms防抖）=====
 function handleAutoSave(id: string, currentContent: string) {
   if (saveTimer) clearTimeout(saveTimer)
-  saveTimer = setTimeout(() => {
-    noteService.debouncedSave(id, currentContent)
+  savedStatus.value = 'unsaved'
+  saveTimer = setTimeout(async () => {
+    savedStatus.value = 'saving'
+    await noteService.debouncedSave(id, currentContent)
+    savedStatus.value = 'saved'
   }, 500)
 }
 
@@ -305,14 +360,18 @@ onUnmounted(() => {
       </div>
 
       <div class="toolbar">
-        <button class="toolbar-btn" @click="insertFeynmanTemplate" title="插入费曼模板">
+        <button class="toolbar-btn primary" @click="insertFeynmanTemplate" title="插入费曼模板">
           <BookOpen :size="15" />
-          <span class="btn-label">费曼模板</span>
+          <span class="btn-label">插入费曼模板</span>
         </button>
         <button class="toolbar-btn" @click="openVersionHistory" title="历史版本">
           <History :size="15" />
           <span class="btn-label">历史版本</span>
         </button>
+        <span
+          class="save-status"
+          :class="savedStatus"
+        >{{ savedStatus === 'saved' ? '已保存' : savedStatus === 'saving' ? '保存中...' : '未保存' }}</span>
       </div>
     </header>
 
@@ -426,6 +485,14 @@ onUnmounted(() => {
   transform: translateY(-1px);
   box-shadow: var(--shadow-sm);
 }
+.toolbar-btn.primary {
+  background: var(--color-primary);
+  color: white;
+}
+.toolbar-btn.primary:hover {
+  background: var(--color-primary-light);
+  color: white;
+}
 
 .btn-label {
   display: none;
@@ -434,6 +501,25 @@ onUnmounted(() => {
   .btn-label {
     display: inline;
   }
+}
+
+.save-status {
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 10px;
+  margin-left: 4px;
+  transition: all var(--transition-fast);
+}
+.save-status.saved {
+  color: var(--color-success);
+  background: rgba(22, 163, 74, 0.08);
+}
+.save-status.saving {
+  color: var(--color-accent);
+  background: rgba(232, 168, 56, 0.08);
+}
+.save-status.unsaved {
+  color: var(--text-muted);
 }
 
 .editor-container {

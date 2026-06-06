@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { wrongBookService } from '@/services/wrongBookService'
+import { questionService } from '@/services/questionService'
 import type { PracticeConfig, WrongBook } from '@/types/database'
 
 const props = defineProps<{
@@ -14,18 +15,39 @@ const emit = defineEmits<{
   start: [config: PracticeConfig]
 }>()
 
-// 表单状态
+// ===== 表单状态 =====
 const order = ref<'random' | 'sequential'>('random')
 const mode = ref<'memorize' | 'quiz'>('quiz')
 const countMode = ref<'all' | 'custom'>('all')
 const customCount = ref(20)
+const scopeType = ref<'bankAll' | 'folderTree' | 'chapters' | 'all'>('bankAll')
+const selectedChapterIds = ref<string[]>([])
 const wrongBookAction = ref<'create' | 'join' | 'none'>('none')
 const newWrongBookName = ref('')
 const targetWrongBookId = ref('')
 const wrongBooks = ref<WrongBook[]>([])
 
+// 章节树（用于手动选择）
+interface ChapterNode {
+  id: string
+  name: string
+  children?: ChapterNode[]
+}
+const chapterTree = ref<ChapterNode[]>([])
+
 async function loadWrongBooks() {
   wrongBooks.value = await wrongBookService.getAllWrongBooks()
+}
+
+/** 加载章节树供手动选择 */
+async function loadChapterTree() {
+  if (!props.sourceId) return
+  try {
+    const tree = await questionService.getChapterTree(props.sourceId)
+    chapterTree.value = tree
+  } catch {
+    chapterTree.value = []
+  }
 }
 
 function handleStart() {
@@ -34,11 +56,16 @@ function handleStart() {
     sourceId: props.sourceId,
     mode: mode.value,
     order: order.value,
-    wrongBookAction: wrongBookAction.value
+    wrongBookAction: wrongBookAction.value,
+    scopeType: scopeType.value
   }
 
   if (countMode.value === 'custom' && customCount.value > 0) {
     config.count = customCount.value
+  }
+
+  if (scopeType.value === 'chapters') {
+    config.selectedChapterIds = selectedChapterIds.value
   }
 
   if (wrongBookAction.value === 'create') {
@@ -62,192 +89,227 @@ function handleClose() {
   emit('close')
 }
 
+function toggleChapter(id: string) {
+  const idx = selectedChapterIds.value.indexOf(id)
+  if (idx >= 0) {
+    selectedChapterIds.value.splice(idx, 1)
+  } else {
+    selectedChapterIds.value.push(id)
+  }
+}
+
+watch(() => props.show, async (val) => {
+  if (val) {
+    await loadWrongBooks()
+    await loadChapterTree()
+  }
+})
+
 onMounted(() => {
   loadWrongBooks()
 })
 </script>
 
 <template>
-  <Teleport to="body">
-    <div v-if="show" class="modal-overlay" @click.self="handleClose">
-      <div class="modal-container">
-        <div class="modal-header">
-          <h3>练习设置</h3>
-          <button class="close-btn" @click="handleClose">✕</button>
+  <!-- 右侧面板（非弹窗） -->
+  <Transition name="slide-panel">
+    <div v-if="show" class="setup-panel">
+      <div class="panel-header">
+        <h3>练习设置</h3>
+        <button class="close-btn" @click="handleClose">✕</button>
+      </div>
+
+      <div class="panel-body">
+        <!-- 本次范围：4种选项 -->
+        <div class="form-group">
+          <label class="form-label">本次范围</label>
+          <div class="scope-options">
+            <label class="scope-option" :class="{ active: scopeType === 'bankAll' }">
+              <input type="radio" value="bankAll" v-model="scopeType" />
+              <span>当前题库全部题目</span>
+            </label>
+            <label class="scope-option" :class="{ active: scopeType === 'folderTree' }">
+              <input type="radio" value="folderTree" v-model="scopeType" />
+              <span>当前文件夹及子文件夹</span>
+            </label>
+            <label class="scope-option" :class="{ active: scopeType === 'chapters' }">
+              <input type="radio" value="chapters" v-model="scopeType" />
+              <span>手动选择章节</span>
+            </label>
+            <label class="scope-option" :class="{ active: scopeType === 'all' }">
+              <input type="radio" value="all" v-model="scopeType" />
+              <span>全部题库</span>
+            </label>
+          </div>
+
+          <!-- 手动选择章节时的章节树 -->
+          <div v-if="scopeType === 'chapters'" class="chapter-select-area">
+            <template v-if="chapterTree.length > 0">
+              <div
+                v-for="chapter in chapterTree"
+                :key="chapter.id"
+                class="chapter-item"
+                @click="toggleChapter(chapter.id)"
+              >
+                <input
+                  type="checkbox"
+                  :checked="selectedChapterIds.includes(chapter.id)"
+                  class="chapter-checkbox"
+                  @click.stop
+                />
+                <span>{{ chapter.name }}</span>
+              </div>
+            </template>
+            <p v-else class="no-chapters">该题库暂无章节</p>
+          </div>
         </div>
 
-        <div class="modal-body">
-          <!-- 来源范围（只读展示） -->
-          <div class="form-group">
-            <label class="form-label">练习范围</label>
-            <div class="source-info">
-              <span class="source-type-badge">{{ sourceType === 'bank' ? '题库' : sourceType === 'folder' ? '章节' : '错题本' }}</span>
-              <span class="source-id">ID: {{ sourceId.slice(0, 8) }}...</span>
-            </div>
+        <!-- 题目顺序 -->
+        <div class="form-group">
+          <label class="form-label">题目顺序</label>
+          <div class="radio-group">
+            <label class="radio-option" :class="{ active: order === 'random' }">
+              <input type="radio" value="random" v-model="order" />
+              <span>随机顺序</span>
+            </label>
+            <label class="radio-option" :class="{ active: order === 'sequential' }">
+              <input type="radio" value="sequential" v-model="order" />
+              <span>按序练习</span>
+            </label>
           </div>
+        </div>
 
-          <!-- 练习顺序 -->
-          <div class="form-group">
-            <label class="form-label">练习顺序</label>
-            <div class="radio-group">
-              <label class="radio-option" :class="{ active: order === 'random' }">
-                <input type="radio" value="random" v-model="order" />
-                <span>🔀 随机顺序</span>
-              </label>
-              <label class="radio-option" :class="{ active: order === 'sequential' }">
-                <input type="radio" value="sequential" v-model="order" />
-                <span>📋 按序练习</span>
-              </label>
-            </div>
+        <!-- 练习模式 -->
+        <div class="form-group">
+          <label class="form-label">练习模式</label>
+          <div class="mode-cards">
+            <label class="mode-card" :class="{ active: mode === 'quiz' }">
+              <input type="radio" value="quiz" v-model="mode" />
+              <strong>刷题模式</strong>
+              <small>作答后即时反馈对错</small>
+            </label>
+            <label class="mode-card" :class="{ active: mode === 'memorize' }">
+              <input type="radio" value="memorize" v-model="mode" />
+              <strong>背题模式</strong>
+              <small>浏览题目并标记掌握程度</small>
+            </label>
           </div>
+        </div>
 
-          <!-- 练习模式 -->
-          <div class="form-group">
-            <label class="form-label">练习模式</label>
-            <div class="radio-group">
-              <label class="radio-option mode-card" :class="{ active: mode === 'quiz' }">
-                <input type="radio" value="quiz" v-model="mode" />
-                <div class="mode-info">
-                  <span class="mode-icon">✍️</span>
-                  <div>
-                    <strong>刷题模式</strong>
-                    <p>作答后即时反馈对错</p>
-                  </div>
-                </div>
-              </label>
-              <label class="radio-option mode-card" :class="{ active: mode === 'memorize' }">
-                <input type="radio" value="memorize" v-model="mode" />
-                <div class="mode-info">
-                  <span class="mode-icon">📖</span>
-                  <div>
-                    <strong>背题模式</strong>
-                    <p>浏览题目并标记掌握程度</p>
-                  </div>
-                </div>
-              </label>
-            </div>
+        <!-- 题目数量 -->
+        <div class="form-group">
+          <label class="form-label">题目数量</label>
+          <div class="count-options">
+            <label class="radio-option" :class="{ active: countMode === 'all' }">
+              <input type="radio" value="all" v-model="countMode" />
+              全部题目
+            </label>
+            <label class="radio-option custom-row" :class="{ active: countMode === 'custom' }">
+              <input type="radio" value="custom" v-model="countMode" />
+              自定义：
+              <input
+                type="number"
+                v-model.number="customCount"
+                min="1"
+                max="500"
+                class="count-input"
+                :disabled="countMode !== 'custom'"
+              /> 题
+            </label>
           </div>
+        </div>
 
-          <!-- 题目数量 -->
-          <div class="form-group">
-            <label class="form-label">题目数量</label>
-            <div class="count-options">
-              <label class="radio-option" :class="{ active: countMode === 'all' }">
-                <input type="radio" value="all" v-model="countMode" />
-                全部题目
-              </label>
-              <label class="radio-option custom-count-row" :class="{ active: countMode === 'custom' }">
-                <input type="radio" value="custom" v-model="countMode" />
-                自定义数量：
+        <!-- 错题处理方式 -->
+        <div class="form-group">
+          <label class="form-label">目标错题本</label>
+          <div class="wb-options">
+            <label class="wb-option" :class="{ active: wrongBookAction === 'none' }">
+              <input type="radio" value="none" v-model="wrongBookAction" />
+              不加入任何错题本
+            </label>
+            <label class="wb-option" :class="{ active: wrongBookAction === 'join' }">
+              <input type="radio" value="join" v-model="wrongBookAction" />
+              加入已有错题本
+              <select
+                v-if="wrongBookAction === 'join'"
+                v-model="targetWrongBookId"
+                class="wb-select"
+              >
+                <option value="">请选择...</option>
+                <option v-for="wb in wrongBooks" :key="wb.id" :value="wb.id">
+                  {{ wb.name }}
+                </option>
+              </select>
+            </label>
+            <label class="wb-option" :class="{ active: wrongBookAction === 'create' }">
+              <input type="radio" value="create" v-model="wrongBookAction" />
+              新建错题本
+              <div v-if="wrongBookAction === 'create'" class="wb-name-row">
                 <input
-                  type="number"
-                  v-model.number="customCount"
-                  min="1"
-                  max="500"
-                  class="count-input"
-                  :disabled="countMode !== 'custom'"
-                />
-              </label>
-            </div>
-          </div>
-
-          <!-- 错题处理方式 -->
-          <div class="form-group">
-            <label class="form-label">错题处理方式</label>
-            <div class="wb-options">
-              <label class="radio-option wb-option" :class="{ active: wrongBookAction === 'none' }">
-                <input type="radio" value="none" v-model="wrongBookAction" />
-                不加入任何错题本
-              </label>
-              <label class="radio-option wb-option" :class="{ active: wrongBookAction === 'join' }">
-                <input type="radio" value="join" v-model="wrongBookAction" />
-                加入已有错题本
-                <select
-                  v-if="wrongBookAction === 'join'"
-                  v-model="targetWrongBookId"
-                  class="wb-select"
-                >
-                  <option value="">请选择...</option>
-                  <option v-for="wb in wrongBooks" :key="wb.id" :value="wb.id">
-                    {{ wb.name }}
-                  </option>
-                </select>
-              </label>
-              <label class="radio-option wb-option" :class="{ active: wrongBookAction === 'create' }">
-                <input type="radio" value="create" v-model="wrongBookAction" />
-                新建错题本
-                <input
-                  v-if="wrongBookAction === 'create'"
                   v-model="newWrongBookName"
                   placeholder="请输入错题本名称"
                   class="wb-input"
                 />
-              </label>
-            </div>
+                <span class="wb-hint">保持与原题库结构一一对应</span>
+              </div>
+            </label>
           </div>
         </div>
+      </div>
 
-        <div class="modal-footer">
-          <button class="btn btn-cancel" @click="handleClose">取消</button>
-          <button class="btn btn-submit" @click="handleStart">开始练习 ▶</button>
-        </div>
+      <div class="panel-footer">
+        <button class="btn btn-cancel" @click="handleClose">取消</button>
+        <button class="btn btn-submit" @click="handleStart">开始刷题</button>
       </div>
     </div>
-  </Teleport>
+  </Transition>
 </template>
 
 <style scoped>
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: var(--bg-overlay);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  animation: fadeIn var(--transition-normal);
-}
-
-.modal-container {
+/* ====== 右侧面板容器 ====== */
+.setup-panel {
+  width: 420px;
+  min-width: 380px;
+  height: 100%;
   background: var(--bg-secondary);
-  border-radius: var(--border-radius-lg);
-  box-shadow: var(--shadow-lg);
-  width: 560px;
-  max-width: 92vw;
-  max-height: 85vh;
+  border-left: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
-  animation: slideUp var(--transition-normal);
+  flex-shrink: 0;
+  overflow: hidden;
 }
 
-.modal-header {
+.panel-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 24px;
+  padding: 16px 20px;
   border-bottom: 1px solid var(--border-color);
   flex-shrink: 0;
 }
-.modal-header h3 {
+.panel-header h3 {
   font-size: 16px;
   font-weight: 600;
   margin: 0;
 }
 .close-btn {
-  width: 32px; height: 32px;
+  width: 30px; height: 30px;
   border-radius: var(--border-radius-sm);
   display: flex; align-items: center; justify-content: center;
-  font-size: 18px; color: var(--text-muted);
-  transition: background-color var(--transition-fast); cursor: pointer; border: none; background: transparent;
+  font-size: 16px; color: var(--text-muted);
+  cursor: pointer; border: none; background: transparent;
+  transition: background var(--transition-fast);
 }
 .close-btn:hover { background: var(--bg-hover); }
 
-.modal-body {
-  padding: 20px 24px;
+/* ====== 内容区 ====== */
+.panel-body {
+  padding: 18px 20px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 18px;
+  flex: 1;
 }
 
 .form-group {
@@ -261,30 +323,64 @@ onMounted(() => {
   color: var(--text-primary);
 }
 
-/* 来源信息 */
-.source-info {
+/* ====== 范围选择（4选项）===== */
+.scope-options {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.scope-option {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 12px;
-  background: var(--color-gray-50);
-  border-radius: var(--border-radius-sm);
+  padding: 9px 14px;
+  border-radius: var(--border-radius);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  font-size: 13.5px;
+  background: white;
 }
-.source-type-badge {
-  padding: 2px 10px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 500;
+.scope-option:hover { border-color: var(--color-primary-light); }
+.scope-option.active {
+  border-color: var(--color-primary);
   background: var(--color-primary-bg);
   color: var(--color-primary);
+  font-weight: 500;
 }
-.source-id {
+.scope-option input[type="radio"] { accent-color: var(--color-primary); }
+
+/* 章节选择区 */
+.chapter-select-area {
+  margin-top: 4px;
+  padding: 10px 12px;
+  background: var(--color-gray-50);
+  border-radius: var(--border-radius);
+  max-height: 160px;
+  overflow-y: auto;
+}
+.chapter-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
   font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.chapter-item:hover { color: var(--text-primary); }
+.chapter-checkbox {
+  accent-color: var(--color-primary);
+}
+.no-chapters {
+  font-size: 12.5px;
   color: var(--text-muted);
-  font-family: var(--font-mono);
+  text-align: center;
+  padding: 12px 0;
+  margin: 0;
 }
 
-/* 单选项组 */
+/* ====== 单选组 ====== */
 .radio-group,
 .count-options,
 .wb-options {
@@ -292,7 +388,6 @@ onMounted(() => {
   flex-direction: column;
   gap: 6px;
 }
-
 .radio-option {
   display: flex;
   align-items: center;
@@ -302,54 +397,59 @@ onMounted(() => {
   border: 1px solid var(--border-color);
   cursor: pointer;
   transition: all var(--transition-fast);
-  font-size: 14px;
-  background: var(--bg-secondary);
+  font-size: 13.5px;
+  background: white;
 }
-.radio-option:hover {
-  border-color: var(--color-primary-light);
-  background: var(--color-primary-bg);
-}
+.radio-option:hover { border-color: var(--color-primary-light); }
 .radio-option.active {
   border-color: var(--color-primary);
   background: var(--color-primary-bg);
   color: var(--color-primary);
   font-weight: 500;
 }
-.radio-option input[type="radio"] {
-  accent-color: var(--color-primary);
-}
+.radio-option input[type="radio"] { accent-color: var(--color-primary); }
 
 /* 模式卡片 */
+.mode-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
 .mode-card {
-  flex-direction: column;
-  align-items: stretch;
-  padding: 14px 16px;
-}
-.mode-info {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 12px;
-  margin-top: 4px;
+  gap: 4px;
+  padding: 12px 10px;
+  border-radius: var(--border-radius);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  background: white;
+  text-align: center;
 }
-.mode-icon {
-  font-size: 28px;
+.mode-card strong {
+  font-size: 13.5px;
+  font-weight: 600;
 }
-.mode-info strong {
-  font-size: 14px;
-  display: block;
-}
-.mode-info p {
-  font-size: 12px;
+.mode-card small {
+  font-size: 11px;
   color: var(--text-muted);
-  margin: 2px 0 0;
 }
+.mode-card:hover { border-color: var(--color-primary-light); }
+.mode-card.active {
+  border-color: var(--color-primary);
+  background: var(--color-primary-bg);
+}
+.mode-card.active strong { color: var(--color-primary); }
+.mode-card input[type="radio"] { display: none; }
 
 /* 自定义数量 */
-.custom-count-row {
+.custom-row {
   flex-wrap: wrap;
 }
 .count-input {
-  width: 80px;
+  width: 70px;
   padding: 4px 8px;
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-sm);
@@ -357,10 +457,7 @@ onMounted(() => {
   text-align: center;
   font-family: inherit;
 }
-.count-input:focus {
-  outline: none;
-  border-color: var(--color-primary);
-}
+.count-input:focus { outline: none; border-color: var(--color-primary); }
 
 /* 错题本选项 */
 .wb-option {
@@ -379,31 +476,78 @@ onMounted(() => {
   margin-left: 24px;
 }
 .wb-select:focus,
-.wb-input:focus {
-  outline: none;
-  border-color: var(--color-primary);
+.wb-input:focus { outline: none; border-color: var(--color-primary); }
+.wb-name-row {
+  width: calc(100% - 24px);
+  margin-left: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.wb-hint {
+  font-size: 11.5px;
+  color: var(--color-success);
+  margin-left: 2px;
 }
 
-.modal-footer {
+/* ====== 底部按钮 ====== */
+.panel-footer {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   gap: 10px;
-  padding: 14px 24px;
+  padding: 14px 20px;
   border-top: 1px solid var(--border-color);
   flex-shrink: 0;
 }
 .btn {
-  padding: 8px 22px;
+  flex: 1;
+  padding: 9px 20px;
   border-radius: var(--border-radius);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   border: none;
-  transition: transform var(--transition-fast), background-color var(--transition-fast);
+  transition: all var(--transition-fast);
 }
-.btn:hover { transform: scale(1.02); }
-.btn-cancel { background: var(--color-gray-100); color: var(--text-secondary); }
-.btn-cancel:hover { background: var(--color-gray-200); }
-.btn-submit { background: var(--color-accent); color: white; }
-.btn-submit:hover { background: var(--color-accent-light); }
+.btn-cancel {
+  background: white;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+.btn-cancel:hover { background: var(--color-gray-50); }
+.btn-submit {
+  background: var(--color-primary);
+  color: white;
+}
+.btn-submit:hover { background: var(--color-primary-light); }
+
+/* ====== 面板滑入动画 ====== */
+.slide-panel-enter-active {
+  transition: transform 0.28s ease, opacity 0.28s ease;
+}
+.slide-panel-leave-active {
+  transition: transform 0.22s ease, opacity 0.22s ease;
+}
+.slide-panel-enter-from {
+  transform: translateX(100%);
+  opacity: 0;
+}
+.slide-panel-leave-to {
+  transform: translateX(100%);
+  opacity: 0;
+}
+
+@media (max-width: 767px) {
+  .setup-panel {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    width: 100%;
+    min-width: unset;
+    border-left: none;
+  }
+  .mode-cards {
+    grid-template-columns: 1fr;
+  }
+}
 </style>

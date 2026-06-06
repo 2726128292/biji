@@ -170,6 +170,8 @@ export interface PracticeConfig {
   wrongBookAction: 'create' | 'join' | 'none'
   targetWrongBookId?: string
   newWrongBookName?: string
+  scopeType?: 'bankAll' | 'folderTree' | 'chapters' | 'all'
+  selectedChapterIds?: string[]
 }
 
 // ===== 练习报告 =====

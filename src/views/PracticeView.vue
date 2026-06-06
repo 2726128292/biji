@@ -101,6 +101,24 @@ function handlePrev() {
   }
 }
 
+// 背题模式操作（列表式，不依赖 currentIndex）
+async function handleMemorizeKnow(id: string) {
+  if (!sessionId.value) return
+  await practiceService.submitAnswer(sessionId.value, questions.value.find(q => q.id === id)!, 'known')
+}
+
+async function handleMemorizeDontKnow(id: string) {
+  if (!sessionId.value) return
+  const q = questions.value.find(qq => qq.id === id)
+  if (q) await practiceService.markUnknown(sessionId.value, q)
+  // 自动加入错题本
+  answers.value.push({ questionId: id, result: 'unknown', submittedAnswer: '__UNKNOWN__' })
+}
+
+async function handleMemorizeStar(id: string) {
+  // 标记重点（可选：记录到答案中）
+}
+
 async function finishSession() {
   if (!sessionId.value) return
   await practiceService.completeSession(sessionId.value)
@@ -145,14 +163,15 @@ function handleCloseSetup() {
         <button class="nav-btn danger" @click="finishSession">退出练习</button>
       </nav>
 
-      <!-- 背题模式 -->
+      <!-- 背题模式：列表式多卡展示 -->
       <MemorizeCard
         v-if="mode === 'memorize'"
-        :question="currentQuestion()"
-        :current-index="currentIndex"
-        :total="questions.length"
-        @next="handleNext"
-        @prev="handlePrev"
+        :questions="questions"
+        :wrong-book-name="(sourceType === 'wrongBook' && sourceId) ? sourceId : undefined"
+        @know="handleMemorizeKnow"
+        @dont-know="handleMemorizeDontKnow"
+        @star="handleMemorizeStar"
+        @finish="finishSession"
       />
 
       <!-- 刷题模式 -->
