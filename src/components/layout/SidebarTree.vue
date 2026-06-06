@@ -197,6 +197,19 @@ async function handleCreateFirstNote() {
   await handleCreateRootNote()
 }
 
+async function handleCreateBank() {
+  const name = prompt('请输入题库名称：', '')
+  if (name && name.trim()) {
+    try {
+      const bank = await questionService.createBank(name.trim())
+      router.push(`/questions/${bank.id}`)
+      loadTree()
+    } catch (e: any) {
+      alert(e.message || '创建失败')
+    }
+  }
+}
+
 onMounted(() => {
   loadTree()
   // 默认展开第一层
@@ -228,7 +241,7 @@ watch(() => [ui.currentModule, route.path], () => {
         <button
           v-if="ui.currentModule === 'questions'"
           class="action-btn"
-          @click="ui.showQuestionForm = true"
+          @click.stop="handleCreateBank"
           title="新建题库"
         >
           <Plus :size="16" />

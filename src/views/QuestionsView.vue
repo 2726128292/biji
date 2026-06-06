@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useUIStore } from '@/stores/uiStore'
 import QuestionBankList from '@/components/questions/QuestionBankList.vue'
 import QuestionBankView from '@/components/questions/QuestionBankView.vue'
 import WrongBookMirrorTree from '@/components/wrongbook/WrongBookMirrorTree.vue'
 import { questionService } from '@/services/questionService'
 
+const ui = useUIStore()
 const route = useRoute()
 const router = useRouter()
 
@@ -26,8 +28,16 @@ async function loadBankName() {
   }
 }
 
-function handleCreateBank() {
-  // 触发新建题库
+async function handleCreateBank() {
+  const name = prompt('请输入题库名称：', '')
+  if (name && name.trim()) {
+    try {
+      const bank = await questionService.createBank(name.trim())
+      router.push(`/questions/${bank.id}`)
+    } catch (e: any) {
+      alert(e.message || '创建失败')
+    }
+  }
 }
 
 function handlePractice(sourceType: string, sourceId: string) {
@@ -57,7 +67,7 @@ watch(() => route.params, () => {
     </div>
 
     <!-- 题库列表 -->
-    <QuestionBankList v-if="viewMode === 'list'" @practice="handlePractice" />
+    <QuestionBankList v-if="viewMode === 'list'" @practice="handlePractice" @create="handleCreateBank" />
 
     <!-- 题库详情/章节题目 -->
     <QuestionBankView
