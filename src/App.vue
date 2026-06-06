@@ -16,6 +16,11 @@ const settings = useSettingsStore()
 onMounted(async () => {
   await initDefaultData()
   await settings.loadSettings()
+
+  // 移动端默认收起侧边栏
+  if (window.innerWidth < 768) {
+    ui.closeSidebar()
+  }
   
   // 申请持久化存储
   if ('storage' in navigator && 'persist' in (navigator as any).storage) {

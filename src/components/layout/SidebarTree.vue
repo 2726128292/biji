@@ -154,7 +154,17 @@ function selectItem(item: any) {
 function handleContextMenu(event: MouseEvent, item: any) {
   event.preventDefault()
   const items = getContextMenuItems(item)
-  ui.showContextMenu(event.clientX, event.clientY, items, item.id, item.isFolder ? 'folder' : 'note')
+  // 移动端使用底部菜单，桌面端使用右键菜单
+  if (window.innerWidth < 768) {
+    ui.showBottomSheet(
+      item.name,
+      items.map(i => ({ label: i.label, action: i.action, icon: '' })),
+      item.id,
+      item.isFolder ? 'folder' : 'note'
+    )
+  } else {
+    ui.showContextMenu(event.clientX, event.clientY, items, item.id, item.isFolder ? 'folder' : 'note')
+  }
 }
 
 function getContextMenuItems(item: any): Array<{ label: string; action: string }> {
@@ -508,9 +518,40 @@ watch(() => [ui.currentModule, route.path], () => {
     bottom: 0;
     z-index: 200;
     box-shadow: var(--shadow-lg);
+    width: 280px;
+    min-width: 280px;
   }
   .sidebar.collapsed {
     transform: translateX(-100%);
+  }
+
+  /* 移动端树节点触控优化 */
+  .tree-item {
+    padding: 11px 10px;
+    min-height: 48px;
+    margin: 1px 8px;
+  }
+
+  .tree-label {
+    font-size: 14.5px;
+  }
+
+  /* 移动端 ⋮ 按钮始终可见 */
+  .more-btn {
+    opacity: 0.6;
+  }
+  .more-btn:hover,
+  .tree-item:active .more-btn {
+    opacity: 1;
+  }
+
+  /* 搜索框加大 */
+  .search-box {
+    margin: 10px 14px;
+  }
+  .search-box .search-input {
+    font-size: 14px;
+    padding: 9px 0;
   }
 }
 </style>

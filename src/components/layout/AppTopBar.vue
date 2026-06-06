@@ -13,6 +13,26 @@ const router = useRouter()
 const isNotesActive = computed(() => route.path.startsWith('/notes'))
 const isQuestionsActive = computed(() => route.path.startsWith('/questions') || route.path.startsWith('/wrongbook'))
 
+// 移动端动态页面标题（根据当前路由）
+const mobilePageTitle = computed(() => {
+  if (route.path.startsWith('/notes')) return '费曼笔记'
+  if (route.path.startsWith('/wrongbook')) {
+    // 从路由或store获取错题本名称
+    return ui.selectedWrongBookId ? '错题本' : '错题本'
+  }
+  if (route.path.startsWith('/practice')) {
+    if (ui.practiceMode === 'memorize') return '背题模式'
+    if (ui.practiceMode === 'quiz') return '刷题模式'
+    return '练习'
+  }
+  if (route.path.startsWith('/questions')) {
+    if (route.params.bankId) return '题库详情'
+    return '我的题库'
+  }
+  if (route.path.startsWith('/settings')) return '设置'
+  return '知行笔记'
+})
+
 function switchToNotes() {
   ui.setModule('notes')
   router.push('/notes')
@@ -27,11 +47,14 @@ function switchToQuestions() {
 <template>
   <header class="app-topbar">
     <div class="topbar-left">
+      <!-- 汉堡菜单（移动端始终显示，桌面端也可用于收起侧边栏） -->
       <button class="topbar-btn menu-btn" @click="ui.toggleSidebar()" :title="ui.sidebarOpen ? '收起目录' : '展开目录'">
         <Menu :size="20" />
       </button>
-      <h1 class="app-title">知行笔记</h1>
-      <div class="module-switcher">
+
+      <!-- 桌面端：Logo + 模块切换器 -->
+      <h1 class="app-title desktop-only">知行笔记</h1>
+      <div class="module-switcher desktop-only">
         <button
           class="module-tab"
           :class="{ active: isNotesActive }"
@@ -49,6 +72,9 @@ function switchToQuestions() {
           <span>背题刷题</span>
         </button>
       </div>
+
+      <!-- 移动端：页面标题 -->
+      <h2 class="mobile-title mobile-only">{{ mobilePageTitle }}</h2>
     </div>
 
     <div class="topbar-right">
@@ -100,11 +126,22 @@ function switchToQuestions() {
   color: var(--text-primary);
 }
 
-.menu-btn {
-  display: none; /* 移动端显示 */
-}
+/* 桌面端默认显示 */
+.desktop-only { display: flex; }
+.mobile-only { display: none; }
+
+/* 移动端切换 */
 @media (max-width: 767px) {
-  .menu-btn { display: flex; }
+  .desktop-only { display: none !important; }
+  .mobile-only { display: block !important; }
+
+  .mobile-title {
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+    white-space: nowrap;
+  }
 }
 
 .app-title {

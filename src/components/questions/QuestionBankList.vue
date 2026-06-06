@@ -1,10 +1,13 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { questionService } from '@/services/questionService'
 import { formatDate } from '@/utils/index'
+import { useUIStore } from '@/stores/uiStore'
 import type { QuestionBank } from '@/types/database'
 import Empty from '@/components/Empty.vue'
+import { MoreVertical, Search, Library } from 'lucide-vue-next'
 
+const ui = useUIStore()
 const emit = defineEmits<{
   practice: [sourceType: string, sourceId: string, mode: string]
   create: []
@@ -19,6 +22,15 @@ const loading = ref(true)
 // 今日待复习数据
 const reviewCount = ref(0)
 let reviewTimer: ReturnType<typeof setInterval> | null = null
+
+// 移动端搜索
+const searchQuery = ref('')
+
+const filteredBanks = computed(() => {
+  if (!searchQuery.value.trim()) return banks.value
+  const q = searchQuery.value.toLowerCase()
+  return banks.value.filter(b => b.name.toLowerCase().includes(q))
+})
 
 async function loadBanks() {
   loading.value = true
@@ -70,11 +82,26 @@ async function handleRename(bank: QuestionBank) {
 async function handleDelete(bank: QuestionBank) {
   if (!confirm(`确定要删除题库「${bank.name}」吗？此操作不可恢复。`)) return
   try {
-    await questionService.deleteBank(bank.id)
-    await loadBanks()
+    questionService.deleteBank(bank.id).then(() => loadBanks())
   } catch (e: any) {
     alert(e.message || '删除失败')
   }
+}
+
+// 移动端：显示底部操作菜单
+function showBankMenu(bank: QuestionBank, event: Event) {
+  event.stopPropagation()
+  ui.showBottomSheet(
+    bank.name,
+    [
+      { label: '开始背题', action: 'memorize', icon: '▶' },
+      { label: '开始刷题', action: 'quiz', icon: '▶' },
+      { label: '重命名', action: 'rename', icon: '✎' },
+      { label: '删除题库', action: 'delete', icon: '🗑', danger: true }
+    ],
+    bank.id,
+    'bank'
+  )
 }
 
 onMounted(() => {
@@ -101,58 +128,99 @@ onUnmounted(() => {
     </div>
 
     <template v-else>
-      <!-- 顶部操作栏 -->
-      <div class="top-actions">
-        <button class="btn btn-primary" @click="handleCreate">新建题库</button>
-        <button class="btn btn-outline" @click="handleImport">导入题库</button>
-      </div>
+      <!-- 桌面端：顶部操作栏 + 网格 -->
+      <div class="desktop-layout">
+        <div class="top-actions">
+          <button class="btn btn-primary" @click="handleCreate">新建题库</button>
+          <button class="btn btn-outline" @click="handleImport">导入题库</button>
+        </div>
 
-      <!-- 题库网格 -->
-      <div class="bank-grid">
-        <div
-          v-for="bank in banks"
-          :key="bank.id"
-          class="bank-card"
-          @click="$router.push(`/questions/${bank.id}`)"
-        >
-          <div class="card-header">
-            <h3 class="bank-name">{{ bank.name }}</h3>
-            <div class="card-actions" @click.stop>
-              <button class="action-btn" title="重命名" @click="handleRename(bank)">✏️</button>
-              <button class="action-btn danger" title="删除" @click="handleDelete(bank)">🗑️</button>
+        <div class="bank-grid">
+          <div
+            v-for="bank in banks"
+            :key="bank.id"
+            class="bank-card"
+            @click="$router.push(`/questions/${bank.id}`)"
+          >
+            <div class="card-header">
+              <h3 class="bank-name">{{ bank.name }}</h3>
+              <div class="card-actions" @click.stop>
+                <button class="action-btn" title="重命名" @click="handleRename(bank)">✏️</button>
+                <button class="action-btn danger" title="删除" @click="handleDelete(bank)">🗑️</button>
+              </div>
+            </div>
+
+            <div class="card-body">
+              <span class="stat-text">{{ bankCounts[bank.id] ?? 0 }} 道题 · {{ bankChapterCounts[bank.id] ?? 0 }} 个章节</span>
+            </div>
+
+            <div class="card-footer" @click.stop>
+              <button
+                class="btn btn-outline-sm"
+                @click="handlePractice(bank, 'memorize')"
+                :disabled="(bankCounts[bank.id] ?? 0) === 0"
+              >
+                开始背题
+              </button>
+              <button
+                class="btn btn-primary-sm"
+                @click="handlePractice(bank, 'quiz')"
+                :disabled="(bankCounts[bank.id] ?? 0) === 0"
+              >
+                开始刷题
+              </button>
             </div>
           </div>
+        </div>
 
-          <div class="card-body">
-            <span class="stat-text">{{ bankCounts[bank.id] ?? 0 }} 道题 · {{ bankChapterCounts[bank.id] ?? 0 }} 个章节</span>
+        <!-- 今日待复习横幅 -->
+        <div class="review-banner">
+          <div class="review-content">
+            <strong>今日待复习</strong>
+            <span>又有{{ reviewCount }}道新题需要复习</span>
           </div>
-
-          <div class="card-footer" @click.stop>
-            <button
-              class="btn btn-outline-sm"
-              @click="handlePractice(bank, 'memorize')"
-              :disabled="(bankCounts[bank.id] ?? 0) === 0"
-            >
-              开始背题
-            </button>
-            <button
-              class="btn btn-primary-sm"
-              @click="handlePractice(bank, 'quiz')"
-              :disabled="(bankCounts[bank.id] ?? 0) === 0"
-            >
-              开始刷题
-            </button>
-          </div>
+          <button class="btn btn-review" @click="$emit('practice', 'review', '', 'quiz')">开始复习</button>
         </div>
       </div>
 
-      <!-- 今日待复习横幅 -->
-      <div class="review-banner">
-        <div class="review-content">
-          <strong>今日待复习</strong>
-          <span>又有{{ reviewCount }}道新题需要复习</span>
+      <!-- 移动端：搜索框 + 列表 -->
+      <div class="mobile-layout">
+        <!-- 搜索框 -->
+        <div class="mobile-search">
+          <Search :size="16" />
+          <input type="text" v-model="searchQuery" placeholder="搜索题库" class="mobile-search-input" />
         </div>
-        <button class="btn btn-review" @click="$emit('practice', 'review', '', 'quiz')">开始复习</button>
+
+        <!-- 新建按钮行 -->
+        <div class="mobile-header">
+          <span></span>
+          <button class="btn btn-primary btn-sm" @click="handleCreate">新建题库</button>
+        </div>
+
+        <!-- 单列列表 -->
+        <div class="bank-list">
+          <div
+            v-for="bank in filteredBanks"
+            :key="bank.id"
+            class="bank-list-item"
+            @click="$router.push(`/questions/${bank.id}`)"
+          >
+            <Library :size="20" class="list-icon" />
+            <div class="list-info">
+              <span class="list-name">{{ bank.name }}</span>
+              <span class="list-count">{{ bankCounts[bank.id] ?? 0 }}题</span>
+            </div>
+            <button class="list-more-btn" @click="showBankMenu(bank, $event)">
+              <MoreVertical :size="18" />
+            </button>
+          </div>
+        </div>
+
+        <!-- 移动端今日待复习 -->
+        <div v-if="reviewCount > 0" class="mobile-review-bar">
+          <span>今日待复习：{{ reviewCount }}道新题</span>
+          <button class="btn btn-review-sm" @click="$emit('practice', 'review', '', 'quiz')">去复习</button>
+        </div>
       </div>
     </template>
   </div>
@@ -179,6 +247,10 @@ onUnmounted(() => {
   color: var(--text-muted);
   font-size: 14px;
 }
+
+/* ===== 桌面端布局 ===== */
+.desktop-layout { display: flex; flex-direction: column; gap: 0; }
+.mobile-layout { display: none; }
 
 /* 顶部操作栏 */
 .top-actions {
@@ -378,5 +450,138 @@ onUnmounted(() => {
 
 .btn-review:hover {
   background: #d97706;
+}
+
+/* ===== 移动端布局 (< 768px) ===== */
+@media (max-width: 767px) {
+  .question-bank-list { padding: 12px; }
+
+  .desktop-layout { display: none !important; }
+  .mobile-layout { display: flex; flex-direction: column; gap: 0; }
+
+  /* 移动端搜索框 */
+  .mobile-search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 12px;
+    background: var(--color-gray-100);
+    border-radius: var(--border-radius);
+    margin-bottom: 10px;
+  }
+  .mobile-search svg { color: var(--text-muted); flex-shrink: 0; }
+  .mobile-search-input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-size: 14px;
+    color: var(--text-primary);
+    outline: none;
+    padding: 9px 0;
+  }
+  .mobile-search-input::placeholder { color: var(--text-muted); }
+
+  /* 移动端头部 */
+  .mobile-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+
+  /* 移动端列表 */
+  .bank-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .bank-list-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 12px;
+    background: white;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+    transition: background var(--transition-fast);
+    min-height: 56px; /* 触控友好 */
+  }
+  .bank-list-item:active {
+    background: var(--bg-hover);
+  }
+
+  .list-icon {
+    color: var(--color-primary);
+    flex-shrink: 0;
+  }
+
+  .list-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .list-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .list-count {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .list-more-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--border-radius-sm);
+    color: var(--text-muted);
+    background: transparent;
+    border: none;
+    flex-shrink: 0;
+  }
+  .list-more-btn:active {
+    background: var(--color-gray-100);
+  }
+
+  /* 移动端今日待复习 */
+  .mobile-review-bar {
+    margin-top: 16px;
+    padding: 12px 16px;
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: var(--border-radius);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  .btn-review-sm {
+    padding: 6px 14px;
+    font-size: 13px;
+    background: #f59e0b;
+    color: white;
+    border: none;
+    border-radius: var(--border-radius);
+    font-weight: 500;
+  }
+
+  .btn-sm {
+    padding: 7px 16px;
+    font-size: 13px;
+  }
 }
 </style>

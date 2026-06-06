@@ -717,4 +717,110 @@ function isUserWrongOption(idx: number): boolean {
   padding: 10px 28px;
 }
 .btn-next:hover { background: var(--color-primary-light); }
+
+/* ===== 移动端适配 (< 768px) ===== */
+@media (max-width: 767px) {
+  .quiz-runner {
+    padding: 12px;
+    align-items: flex-start;
+  }
+
+  .question-area {
+    padding: 20px 18px;
+    max-width: 100%;
+    box-shadow: none;
+    border-radius: var(--border-radius-lg);
+    border: 1px solid var(--border-color);
+  }
+
+  /* 题干加大字号 */
+  .question-text {
+    font-size: 17px;
+    line-height: 1.7;
+  }
+
+  /* 选项大触控区域 (min 48px) */
+  .option-item {
+    padding: 14px 16px;
+    min-height: 52px;
+  }
+
+  .opt-label {
+    width: 34px;
+    height: 34px;
+    font-size: 15px;
+  }
+
+  .opt-text {
+    font-size: 15px;
+  }
+
+  /* 判断题按钮加大 */
+  .tf-btn {
+    padding: 22px 20px;
+    font-size: 17px;
+    min-height: 56px;
+  }
+
+  /* 填空输入加大 */
+  .blank-input {
+    padding: 13px 14px;
+    font-size: 16px;
+    min-height: 48px;
+  }
+
+  /* 简答题输入加大 */
+  .short-answer-input {
+    padding: 14px 16px;
+    font-size: 16px;
+    min-height: 120px;
+  }
+
+  /* 底部操作栏 - 固定在底部 */
+  .submit-actions {
+    position: sticky;
+    bottom: 0;
+    background: var(--bg-secondary);
+    padding: 12px 0;
+    margin: 16px -18px -20px; /* 抵消父级padding，贴边 */
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    gap: 10px;
+  }
+  .submit-actions .btn {
+    flex: 1;
+    padding: 13px 16px;
+    font-size: 15px;
+    border-radius: var(--border-radius);
+  }
+
+  /* 反馈区底部操作栏也固定 */
+  .feedback-actions {
+    position: sticky;
+    bottom: 0;
+    background: var(--bg-secondary);
+    padding: 12px 0;
+    margin-top: 8px;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .feedback-actions .btn {
+    flex: 1;
+    padding: 13px 12px;
+    font-size: 14px;
+  }
+
+  /* 计时器加大 */
+  .timer {
+    font-size: 17px;
+  }
+
+  /* 题型标签 */
+  .type-badge {
+    padding: 5px 12px;
+    font-size: 12px;
+  }
+}
 </style>
