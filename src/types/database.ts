@@ -148,6 +148,7 @@ export interface TreeNode {
   sortKey: number
   parentId: string | null
   depth: number
+  noteCount?: number
 }
 
 // ===== 镜像树节点 =====
@@ -207,5 +208,5 @@ export interface BackupData {
   wrongBookQuestionRefs: WrongBookQuestionRef[]
   practiceSessions: PracticeSession[]
   practiceAnswers: PracticeAnswer[]
-  settings: AppSettings
+  settings: AppSettings[]
 }

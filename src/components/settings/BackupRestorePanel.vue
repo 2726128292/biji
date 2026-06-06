@@ -114,7 +114,7 @@ async function handleExport() {
           const { Document, Packer, Paragraph, TextRun } = await import('docx')
           const doc = new Document({
             sections: [{
-              children: generateDocxParagraphs(parsed)
+              children: generateDocxParagraphs(parsed) as any
             }]
           })
           const blob = await Packer.toBlob(doc)

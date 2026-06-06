@@ -283,9 +283,8 @@ export class NoteService {
     // 限制最多10个版本
     const existingVersions = await db.noteVersions
       .where({ noteId })
-      .orderBy('createdAt')
-      .reverse()
-      .toArray()
+      .sortBy('createdAt')
+      .then(arr => arr.reverse())
     
     if (existingVersions.length >= 10) {
       const toDelete = existingVersions.slice(10)
@@ -308,9 +307,8 @@ export class NoteService {
   async getVersions(noteId: string): Promise<NoteVersion[]> {
     return db.noteVersions
       .where({ noteId })
-      .orderBy('createdAt')
-      .reverse()
-      .toArray()
+      .sortBy('createdAt')
+      .then(arr => arr.reverse())
   }
 
   async restoreVersion(noteId: string, versionId: string): Promise<void> {

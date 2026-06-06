@@ -5,6 +5,7 @@ import { useUIStore } from '@/stores/uiStore'
 import { noteService } from '@/services/noteService'
 import { questionService } from '@/services/questionService'
 import { wrongBookService } from '@/services/wrongBookService'
+import { db } from '@/services/db'
 import type { TreeNode } from '@/types/database'
 import {
   ChevronRight,
@@ -156,6 +157,19 @@ function getContextMenuItems(item: any): Array<{ label: string; action: string }
   ]
 }
 
+async function handleCreateRootNote() {
+  const rootFolder = await db.folders.where({ moduleType: 'notes', parentId: null }).first()
+  if (rootFolder) {
+    const note = await noteService.createNote(rootFolder.id, '新笔记')
+    router.push(`/notes/${note.id}`)
+    loadTree()
+  }
+}
+
+async function handleCreateFirstNote() {
+  await handleCreateRootNote()
+}
+
 onMounted(() => {
   loadTree()
   // 默认展开第一层
@@ -280,26 +294,6 @@ watch(() => [ui.currentModule, route.path], () => {
     </div>
   </aside>
 </template>
-
-<script lang="ts">
-import { db } from '@/services/db'
-
-export default {
-  methods: {
-    async handleCreateRootNote() {
-      const rootFolder = await db.folders.where({ moduleType: 'notes', parentId: null }).first()
-      if (rootFolder) {
-        const note = await noteService.createNote(rootFolder.id, '新笔记')
-        this.$router.push(`/notes/${note.id}`)
-        this.loadTree()
-      }
-    },
-    async handleCreateFirstNote() {
-      this.handleCreateRootNote()
-    }
-  }
-}
-</script>
 
 <style scoped>
 .sidebar {
