@@ -23,6 +23,36 @@ const bankName = ref('')
 // 题库列表引用（用于刷新）
 const bankListRef = ref<InstanceType<typeof QuestionBankList> | null>(null)
 
+// ===== 创建题库弹窗（替代 prompt，兼容移动端 PWA） =====
+const showCreateDialog = ref(false)
+const createBankName = ref('')
+const createError = ref('')
+
+function openCreateDialog() {
+  createBankName.value = ''
+  createError.value = ''
+  showCreateDialog.value = true
+}
+
+function closeCreateDialog() {
+  showCreateDialog.value = false
+}
+
+async function confirmCreateBank() {
+  const name = createBankName.value.trim()
+  if (!name) {
+    createError.value = '请输入题库名称'
+    return
+  }
+  try {
+    const bank = await questionService.createBank(name)
+    showCreateDialog.value = false
+    router.push(`/questions/${bank.id}`)
+  } catch (e: any) {
+    createError.value = e.message || '创建失败'
+  }
+}
+
 async function loadBankName() {
   if (viewMode.value === 'bankDetail' || viewMode.value === 'folder') {
     const bank = await questionService.getBank(route.params.bankId as string)
@@ -31,15 +61,8 @@ async function loadBankName() {
 }
 
 async function handleCreateBank() {
-  const name = prompt('请输入题库名称：', '')
-  if (name && name.trim()) {
-    try {
-      const bank = await questionService.createBank(name.trim())
-      router.push(`/questions/${bank.id}`)
-    } catch (e: any) {
-      alert(e.message || '创建失败')
-    }
-  }
+  // 使用自定义弹窗替代 prompt（兼容移动端 PWA）
+  openCreateDialog()
 }
 
 function handlePractice(sourceType: string, sourceId: string, mode?: string) {
@@ -180,6 +203,28 @@ watch(() => route.params, () => {
       :wrong-book-id="route.params.wrongBookId as string"
       @practice="handlePractice"
     />
+
+    <!-- 创建题库弹窗（替代prompt，兼容移动端PWA） -->
+    <Teleport to="body">
+      <div v-if="showCreateDialog" class="create-dialog-overlay" @click.self="closeCreateDialog">
+        <div class="create-dialog">
+          <h3 class="dialog-title">新建题库</h3>
+          <input
+            v-model="createBankName"
+            class="dialog-input"
+            type="text"
+            placeholder="请输入题库名称"
+            autofocus
+            @keyup.enter="confirmCreateBank"
+          />
+          <p v-if="createError" class="dialog-error">{{ createError }}</p>
+          <div class="dialog-actions">
+            <button class="btn btn-cancel" @click="closeCreateDialog">取消</button>
+            <button class="btn btn-primary" @click="confirmCreateBank">创建</button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -239,5 +284,87 @@ watch(() => route.params, () => {
 .btn-icon {
   font-size: 16px;
   font-weight: 700;
+}
+
+/* ===== 创建题库弹窗 ===== */
+.create-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--bg-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1001;
+  animation: fadeIn 0.15s ease;
+}
+
+.create-dialog {
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-lg);
+  width: 400px;
+  max-width: 90vw;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  animation: slideUp 0.2s ease;
+}
+
+.dialog-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.dialog-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  font-size: 15px;
+  font-family: inherit;
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  transition: border-color var(--transition-fast);
+}
+
+.dialog-input:focus {
+  border-color: var(--color-primary);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.1);
+}
+
+.dialog-error {
+  color: var(--color-error);
+  font-size: 13px;
+  margin: 0;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.btn-cancel {
+  background: var(--color-gray-100);
+  color: var(--text-secondary);
+  border: none;
+}
+
+.btn-cancel:hover {
+  background: var(--color-gray-200);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 </style>

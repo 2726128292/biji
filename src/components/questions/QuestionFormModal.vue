@@ -126,8 +126,12 @@ async function handleSubmit() {
 
     if (formType.value === 'trueFalse') {
       answer = formAnswerBool.value
-    } else if (isChoiceType.value) {
-      answer = formOptions.value.map(() => '') // placeholder - real answer handled by options
+    } else if (formType.value === 'single') {
+      // 单选题：answer=true 表示正确答案在options中通过isCorrect标记
+      answer = true
+    } else if (formType.value === 'multiple') {
+      // 多选题：answer为正确选项的label数组
+      answer = formOptions.value.filter(o => o.isCorrect).map(o => o.label)
     } else if (formType.value === 'blank') {
       answer = formAnswerText.value.split('||').map(s => s.trim())
     } else {

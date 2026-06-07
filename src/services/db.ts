@@ -94,14 +94,14 @@ export async function initDefaultData(): Promise<void> {
     })
   }
 
-  // ===== 示例题库：计算机网络 =====
+  // ===== 示例题库：Python编程基础 =====
   const existingBanks = await db.questionBanks.count()
   if (existingBanks === 0) {
     await initSampleBank()
   }
 }
 
-/** 创建示例题库：计算机网络 */
+/** 创建示例题库：Python编程基础（20道题） */
 async function initSampleBank(): Promise<void> {
   const genId = () => crypto.randomUUID()
 
@@ -111,194 +111,267 @@ async function initSampleBank(): Promise<void> {
 
   await db.folders.add({ id: rootFolderId, moduleType: 'questions', parentId: null, bankId: null, name: '全部题目', sortKey: 0 })
 
-  await db.questionBanks.add({ id: bankId, name: '计算机网络', rootFolderId, createdAt: Date.now() - 86400000 })
+  await db.questionBanks.add({ id: bankId, name: 'Python编程基础', rootFolderId, createdAt: Date.now() - 86400000 })
   await db.folders.update(rootFolderId, { bankId: bankId })
 
   // 章节定义
   const ch1 = genId()
   const ch2 = genId()
   const ch3 = genId()
+  const ch4 = genId()
 
   const folderData = [
-    { id: ch1, moduleType: 'questions' as const, parentId: rootFolderId, bankId, name: '第一章 概述', sortKey: 0 },
-    { id: ch2, moduleType: 'questions' as const, parentId: rootFolderId, bankId, name: '第二章 物理层', sortKey: 1 },
-    { id: ch3, moduleType: 'questions' as const, parentId: rootFolderId, bankId, name: '第三章 数据链路层', sortKey: 2 }
+    { id: ch1, moduleType: 'questions' as const, parentId: rootFolderId, bankId, name: '第一章 基础语法', sortKey: 0 },
+    { id: ch2, moduleType: 'questions' as const, parentId: rootFolderId, bankId, name: '第二章 数据结构', sortKey: 1 },
+    { id: ch3, moduleType: 'questions' as const, parentId: rootFolderId, bankId, name: '第三章 函数与模块', sortKey: 2 },
+    { id: ch4, moduleType: 'questions' as const, parentId: rootFolderId, bankId, name: '第四章 面向对象', sortKey: 3 }
   ]
   for (const f of folderData) {
     await db.folders.add(f)
   }
 
-  // 示例题目
+  // 20道Python题目
   const questions: any[] = [
-    // ========== 第一章 概述（单选+多选+判断） ==========
+    // ========== 第一章 基础语法（6题） ==========
     {
       id: genId(), bankId, folderId: ch1, originalIndex: 1,
       type: 'single' as const,
-      content: 'TCP/IP 参考模型共分为几层？',
+      content: 'Python中以下哪个是合法的变量名？',
       options: [
-        { label: 'A', text: '3层', isCorrect: false },
-        { label: 'B', text: '4层', isCorrect: true },
-        { label: 'C', text: '5层', isCorrect: false },
-        { label: 'D', text: '7层', isCorrect: false }
+        { label: 'A', text: '2myVar', isCorrect: false },
+        { label: 'B', text: 'my_var', isCorrect: true },
+        { label: 'C', text: 'my-var', isCorrect: false },
+        { label: 'D', text: 'my var', isCorrect: false }
       ],
       answer: true,
-      explanation: 'TCP/IP参考模型分为四层：应用层、传输层、网际层（网络层）、网络接口层。',
+      explanation: 'Python变量名只能包含字母、数字和下划线，且不能以数字开头。连字符和空格都不允许。',
       stableKey: genId()
     },
     {
       id: genId(), bankId, folderId: ch1, originalIndex: 2,
       type: 'single' as const,
-      content: '在OSI参考模型中，负责端到端可靠传输的是哪一层？',
+      content: '以下代码的输出是什么？\nprint(5 // 2)',
       options: [
-        { label: 'A', text: '网络层', isCorrect: false },
-        { label: 'B', text: '传输层', isCorrect: true },
-        { label: 'C', text: '会话层', isCorrect: false },
-        { label: 'D', text: '表示层', isCorrect: false }
+        { label: 'A', text: '2.5', isCorrect: false },
+        { label: 'B', text: '2', isCorrect: true },
+        { label: 'C', text: '3', isCorrect: false },
+        { label: 'D', text: '2.0', isCorrect: false }
       ],
       answer: true,
-      explanation: '传输层提供端到端的可靠或不可靠的数据传输服务，TCP协议就工作在这一层。',
+      explanation: '`//` 是地板除（整除）运算符，返回商的整数部分。5 // 2 = 2。',
       stableKey: genId()
     },
     {
       id: genId(), bankId, folderId: ch1, originalIndex: 3,
       type: 'multiple' as const,
-      content: '以下哪些属于应用层协议？（多选）',
+      content: '以下哪些是Python的不可变数据类型？（多选）',
       options: [
-        { label: 'A', text: 'HTTP', isCorrect: true },
-        { label: 'B', text: 'IP', isCorrect: false },
-        { label: 'C', text: 'DNS', isCorrect: true },
-        { label: 'D', text: 'TCP', isCorrect: false }
+        { label: 'A', text: 'int（整数）', isCorrect: true },
+        { label: 'B', text: 'list（列表）', isCorrect: false },
+        { label: 'C', text: 'tuple（元组）', isCorrect: true },
+        { label: 'D', text: 'str（字符串）', isCorrect: true }
       ],
-      answer: ['A', 'C'],
-      explanation: 'HTTP和DNS是应用层协议；IP是网络层协议；TCP是传输层协议。',
+      answer: ['A', 'C', 'D'],
+      explanation: 'int、tuple、str是不可变类型；list是可变类型，可以修改其元素。',
       stableKey: genId()
     },
     {
       id: genId(), bankId, folderId: ch1, originalIndex: 4,
       type: 'trueFalse' as const,
-      content: '互联网的英文缩写是Internet。',
+      content: 'Python中，空字符串、空列表、数字0都被视为False。',
       options: [],
       answer: true,
-      explanation: 'Internet即因特网/互联网，是全球最大的计算机网络系统。',
+      explanation: '在布尔上下文中，False、None、0、0.0、""、[]、{}、()、set() 都被视为假值。',
+      stableKey: genId()
+    },
+    {
+      id: genId(), bankId, folderId: ch1, originalIndex: 5,
+      type: 'blank' as const,
+      content: 'Python中用于获取用户输入的函数的名称是 ___。',
+      options: [],
+      answer: ['input'],
+      explanation: 'input()函数用于从标准输入读取一行字符串。',
+      stableKey: genId()
+    },
+    {
+      id: genId(), bankId, folderId: ch1, originalIndex: 6,
+      type: 'single' as const,
+      content: '以下代码的输出是什么？\nprint(3 ** 2)',
+      options: [
+        { label: 'A', text: '6', isCorrect: false },
+        { label: 'B', text: '9', isCorrect: true },
+        { label: 'C', text: '8', isCorrect: false },
+        { label: 'D', text: '32', isCorrect: false }
+      ],
+      answer: true,
+      explanation: '`**` 是幂运算运算符，3 ** 2 = 3² = 9。',
       stableKey: genId()
     },
 
-    // ========== 第二章 物理层（单选+填空） ==========
+    // ========== 第二章 数据结构（5题） ==========
     {
       id: genId(), bankId, folderId: ch2, originalIndex: 1,
       type: 'single' as const,
-      content: '以下哪种传输介质抗电磁干扰能力最强？',
+      content: '执行以下代码后，my_list的值是什么？\nmy_list = [1, 2, 3]\nmy_list.append(4)\nprint(my_list)',
       options: [
-        { label: 'A', text: '双绞线', isCorrect: false },
-        { label: 'B', text: '同轴电缆', isCorrect: false },
-        { label: 'C', text: '光纤', isCorrect: true },
-        { label: 'D', text: '无线电波', isCorrect: false }
+        { label: 'A', text: '[1, 2, 3]', isCorrect: false },
+        { label: 'B', text: '[1, 2, 3, 4]', isCorrect: true },
+        { label: 'C', text: '[4, 1, 2, 3]', isCorrect: false },
+        { label: 'D', text: '报错', isCorrect: false }
       ],
       answer: true,
-      explanation: '光纤使用光信号传输，不受电磁干扰影响，且传输距离远、带宽高。',
+      explanation: 'append()方法在列表末尾添加元素，不返回新列表，直接修改原列表。',
       stableKey: genId()
     },
     {
       id: genId(), bankId, folderId: ch2, originalIndex: 2,
-      type: 'single' as const,
-      content: '奈奎斯特定理描述了什么关系？',
+      type: 'multiple' as const,
+      content: '以下哪些是Python字典的合法操作？（多选）',
       options: [
-        { label: 'A', text: '信噪比与信道容量', isCorrect: false },
-        { label: 'B', text: '带宽与最大数据传输率', isCorrect: true },
-        { label: 'C', text: '信号衰减与距离', isCorrect: false },
-        { label: 'D', text: '误码率与噪声', isCorrect: false }
+        { label: 'A', text: 'd["key"] = value', isCorrect: true },
+        { label: 'B', text: 'd.keys()', isCorrect: true },
+        { label: 'C', text: 'd[0] 访问第一个元素', isCorrect: false },
+        { label: 'D', text: 'd.get("key", "默认值")', isCorrect: true }
       ],
-      answer: true,
-      explanation: '奈奎斯特定理指出：无噪声理想信道的最大码元传输速率=2W Baud（W为带宽）。',
+      answer: ['A', 'B', 'D'],
+      explanation: '字典是无序的键值对集合，不能用索引访问。get()方法在键不存在时返回默认值。',
       stableKey: genId()
     },
     {
       id: genId(), bankId, folderId: ch2, originalIndex: 3,
-      type: 'blank' as const,
-      content: '香农公式中，信道容量C与带宽B和信噪比S/N的关系为 C = ___ × log₂(1 + S/N)。',
+      type: 'trueFalse' as const,
+      content: 'Python的集合(set)可以包含重复元素。',
       options: [],
-      answer: ['B'],
-      explanation: '香农公式：C = B·log₂(1+S/N)，其中B是信道带宽(Hz)，S/N是信噪比。',
+      answer: false,
+      explanation: '集合(set)中的元素是唯一的，不允许重复。重复元素会被自动去重。',
       stableKey: genId()
     },
     {
       id: genId(), bankId, folderId: ch2, originalIndex: 4,
-      type: 'trueFalse' as const,
-      content: '光纤通信中，单模光纤比多模光纤传输距离更短。',
+      type: 'blank' as const,
+      content: '列表推导式 `[x*2 for x in range(5)]` 的结果是 ___。',
       options: [],
-      answer: false,
-      explanation: '恰恰相反。单模光纤只允许一种模式的光传播，色散小，适合长距离传输；多模光纤存在模间色散，适用于短距离。',
+      answer: ['[0, 2, 4, 6, 8]'],
+      explanation: 'range(5)生成0,1,2,3,4，每个乘以2得到0,2,4,6,8。',
+      stableKey: genId()
+    },
+    {
+      id: genId(), bankId, folderId: ch2, originalIndex: 5,
+      type: 'shortAnswer' as const,
+      content: '请简述Python中列表(list)和元组(tuple)的主要区别。',
+      options: [],
+      answer: '1. 列表是可变的（可以增删改元素），元组是不可变的；2. 列表用方括号[]，元组用圆括号()；3. 元组可以作为字典的键，列表不能；4. 元组通常用于存储异构数据，列表用于存储同构数据。',
+      explanation: '不可变性是元组和列表最本质的区别，也决定了它们的适用场景不同。',
       stableKey: genId()
     },
 
-    // ========== 第三章 数据链路层（多选+简答+判断） ==========
+    // ========== 第三章 函数与模块（5题） ==========
     {
       id: genId(), bankId, folderId: ch3, originalIndex: 1,
-      type: 'multiple' as const,
-      content: '以下关于以太网帧结构的说法正确的有：（多选）',
+      type: 'single' as const,
+      content: 'Python中定义函数的关键字是什么？',
       options: [
-        { label: 'A', text: '前导码用于时钟同步', isCorrect: true },
-        { label: 'B', text: '目的MAC地址长度为6字节', isCorrect: true },
-        { label: 'C', text: '类型字段标识上层协议', isCorrect: true },
-        { label: 'D', text: 'FCS使用MD5算法计算', isCorrect: false }
+        { label: 'A', text: 'function', isCorrect: false },
+        { label: 'B', text: 'def', isCorrect: true },
+        { label: 'C', text: 'func', isCorrect: false },
+        { label: 'D', text: 'define', isCorrect: false }
       ],
-      answer: ['A', 'B', 'C'],
-      explanation: 'FCS（帧检验序列）使用CRC循环冗余校验，不是MD5。',
+      answer: true,
+      explanation: 'Python使用`def`关键字定义函数，语法为：def 函数名(参数):',
       stableKey: genId()
     },
     {
       id: genId(), bankId, folderId: ch3, originalIndex: 2,
       type: 'single' as const,
-      content: 'CSMA/CD协议主要用于哪种网络？',
+      content: '以下代码的输出是什么？\ndef foo(x, y=2):\n    return x + y\nprint(foo(3))',
       options: [
-        { label: 'A', text: '无线局域网', isCorrect: false },
-        { label: 'B', text: '总线型以太网', isCorrect: true },
-        { label: 'C', text: '令牌环网', isCorrect: false },
-        { label: 'D', text: 'ATM网络', isCorrect: false }
+        { label: 'A', text: '5', isCorrect: true },
+        { label: 'B', text: '3', isCorrect: false },
+        { label: 'C', text: '报错', isCorrect: false },
+        { label: 'D', text: 'None', isCorrect: false }
       ],
       answer: true,
-      explanation: 'CSMA/CD（载波监听多点接入/碰撞检测）是传统以太网使用的介质访问控制方法。',
+      explanation: 'y=2是默认参数，调用foo(3)时x=3, y使用默认值2，返回3+2=5。',
       stableKey: genId()
     },
     {
       id: genId(), bankId, folderId: ch3, originalIndex: 3,
-      type: 'single' as const,
-      content: 'TCP三次握手的正确顺序是？',
+      type: 'multiple' as const,
+      content: '以下关于Python函数的说法正确的有？（多选）',
       options: [
-        { label: 'A', text: 'SYN → SYN+ACK → ACK', isCorrect: true },
-        { label: 'B', text: 'ACK → SYN → ACK', isCorrect: false },
-        { label: 'C', text: 'SYN → ACK → FIN', isCorrect: false },
-        { label: 'D', text: 'FIN → ACK → SYN', isCorrect: false }
+        { label: 'A', text: '可以使用*args接收任意数量的位置参数', isCorrect: true },
+        { label: 'B', text: '可以使用**kwargs接收任意数量的关键字参数', isCorrect: true },
+        { label: 'C', text: '函数内可以定义嵌套函数', isCorrect: true },
+        { label: 'D', text: 'Python不支持递归函数', isCorrect: false }
       ],
-      answer: true,
-      explanation: '三次握手过程：客户端发送SYN → 服务端回复SYN+ACK → 客户端发送ACK，连接建立完成。',
+      answer: ['A', 'B', 'C'],
+      explanation: 'Python完全支持递归函数，且支持闭包和嵌套函数定义。',
       stableKey: genId()
     },
     {
       id: genId(), bankId, folderId: ch3, originalIndex: 4,
-      type: 'blank' as const,
-      content: 'ARP协议的作用是通过___地址查询___地址。',
+      type: 'trueFalse' as const,
+      content: 'Python中，import语句只能放在文件顶部。',
       options: [],
-      answer: ['IP', 'MAC'],
-      explanation: 'ARP（地址解析协议）将网络层的IP地址解析为数据链路层的MAC地址。',
+      answer: false,
+      explanation: 'import语句可以放在任何位置，包括函数内部。但通常建议放在文件顶部。',
       stableKey: genId()
     },
     {
       id: genId(), bankId, folderId: ch3, originalIndex: 5,
-      type: 'trueFalse' as const,
-      content: '交换机工作在OSI模型的第三层（网络层）。',
+      type: 'blank' as const,
+      content: 'Python中，lambda函数又称为匿名函数，其语法为：lambda 参数: ___。',
       options: [],
-      answer: false,
-      explanation: '交换机主要工作在第二层（数据链路层），根据MAC地址转发帧。三层交换机才具备路由功能。',
+      answer: ['表达式'],
+      explanation: 'lambda函数只能包含一个表达式，不能包含语句。例如：lambda x: x * 2。',
+      stableKey: genId()
+    },
+
+    // ========== 第四章 面向对象（4题） ==========
+    {
+      id: genId(), bankId, folderId: ch4, originalIndex: 1,
+      type: 'single' as const,
+      content: '以下代码的输出是什么？\nclass A:\n    def __init__(self):\n        self.x = 1\na = A()\nprint(a.x)',
+      options: [
+        { label: 'A', text: '1', isCorrect: true },
+        { label: 'B', text: '0', isCorrect: false },
+        { label: 'C', text: 'None', isCorrect: false },
+        { label: 'D', text: '报错', isCorrect: false }
+      ],
+      answer: true,
+      explanation: '__init__是构造函数，在创建对象时自动调用。self.x = 1为实例属性赋值。',
       stableKey: genId()
     },
     {
-      id: genId(), bankId, folderId: ch3, originalIndex: 6,
-      type: 'shortAnswer' as const,
-      content: '请简述滑动窗口协议的基本原理。',
+      id: genId(), bankId, folderId: ch4, originalIndex: 2,
+      type: 'multiple' as const,
+      content: '以下关于Python面向对象的说法正确的有？（多选）',
+      options: [
+        { label: 'A', text: 'Python支持多重继承', isCorrect: true },
+        { label: 'B', text: '__init__是构造函数', isCorrect: true },
+        { label: 'C', text: '所有类默认继承自object', isCorrect: true },
+        { label: 'D', text: 'Python不支持私有属性', isCorrect: false }
+      ],
+      answer: ['A', 'B', 'C'],
+      explanation: 'Python通过命名约定（双下划线前缀）实现私有属性，如__name会被名称改写为_ClassName__name。',
+      stableKey: genId()
+    },
+    {
+      id: genId(), bankId, folderId: ch4, originalIndex: 3,
+      type: 'trueFalse' as const,
+      content: 'Python中，子类可以重写父类的方法，这称为方法覆盖。',
       options: [],
-      answer: '发送方维护一个发送窗口，接收方维护一个接收窗口。窗口内的帧可以连续发送而无需逐帧确认，窗口大小决定了未确认帧的最大数量。通过滑动窗口实现流量控制和可靠传输。',
-      explanation: '滑动窗口是TCP等可靠传输协议的核心机制，兼顾了效率和可靠性。',
+      answer: true,
+      explanation: '方法覆盖（Method Overriding）是面向对象编程的核心特性之一，子类定义同名方法即可覆盖父类方法。',
+      stableKey: genId()
+    },
+    {
+      id: genId(), bankId, folderId: ch4, originalIndex: 4,
+      type: 'shortAnswer' as const,
+      content: '请简述Python中`self`参数的作用。',
+      options: [],
+      answer: 'self代表类的实例对象本身。在类的方法中，self作为第一个参数，用于访问实例的属性和其他方法。调用方法时，Python会自动将实例对象传递给self参数，不需要手动传入。',
+      explanation: 'self不是Python关键字，可以使用其他名称，但约定俗成使用self。',
       stableKey: genId()
     }
   ]
