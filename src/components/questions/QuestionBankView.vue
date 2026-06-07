@@ -11,7 +11,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  practice: [sourceType: string, sourceId: string]
+  practice: [sourceType: string, sourceId: string, mode?: string]
   batchImport: []
 }>()
 
@@ -155,8 +155,11 @@ function handleBatchImport() {
 }
 
 function handlePractice() {
-  // 使用 bank 类型查整个题库，而不是只查当前文件夹
-  emit('practice', 'bank', props.bankId)
+  emit('practice', 'bank', props.bankId, 'quiz')
+}
+
+function handleMemorize() {
+  emit('practice', 'bank', props.bankId, 'memorize')
 }
 
 onMounted(async () => {
@@ -244,6 +247,7 @@ watch(() => props.folderId, async (val) => {
         <div class="panel-actions">
           <button class="btn btn-primary btn-sm" @click="handleCreateQuestion">+ 新建题目</button>
           <button class="btn btn-outline btn-sm" @click="handleBatchImport">↑ 批量导入</button>
+          <button class="btn btn-accent btn-sm" @click="handleMemorize">📖 开始背题</button>
           <button class="btn btn-outline-primary btn-sm" @click="handlePractice">▶ 开始刷题</button>
         </div>
       </div>
@@ -529,5 +533,103 @@ watch(() => props.folderId, async (val) => {
 .btn-sm {
   padding: 5px 12px;
   font-size: 12px;
+}
+
+/* ===== 移动端适配 ===== */
+@media (max-width: 767px) {
+  .question-bank-view {
+    flex-direction: column;
+  }
+
+  .chapter-sidebar {
+    width: 100%;
+    min-width: 0;
+    max-height: 40vh;
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .tree-container {
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+    padding: 8px 12px;
+  }
+
+  .tree-list {
+    display: flex;
+    gap: 8px;
+    padding: 0;
+  }
+
+  .tree-node {
+    flex-shrink: 0;
+  }
+
+  .node-item {
+    padding: 6px 14px;
+    border-radius: 20px;
+    background: var(--bg-secondary);
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  .node-item.active {
+    background: var(--color-primary);
+    color: white;
+  }
+
+  .node-item.child {
+    padding-left: 0;
+  }
+
+  .expand-icon,
+  .expand-placeholder {
+    display: none;
+  }
+
+  .tree-children {
+    display: contents;
+  }
+
+  .breadcrumb-nav {
+    padding: 10px 16px 6px;
+    font-size: 13px;
+  }
+
+  .panel-header {
+    padding: 10px 16px;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .panel-header h3 {
+    font-size: 14px;
+    width: 100%;
+  }
+
+  .question-count {
+    width: 100%;
+    order: -1;
+    font-size: 12px;
+  }
+
+  .panel-actions {
+    margin-left: 0;
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .panel-actions .btn {
+    flex: 1;
+    min-width: 0;
+    justify-content: center;
+  }
+
+  .questions-list {
+    padding: 12px 16px;
+    gap: 10px;
+  }
 }
 </style>
