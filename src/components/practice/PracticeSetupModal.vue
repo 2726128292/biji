@@ -113,6 +113,7 @@ watch(() => props.show, async (val) => {
 
 onMounted(() => {
   loadWrongBooks()
+  loadChapterTree()
 })
 </script>
 
