@@ -96,8 +96,10 @@ export async function initDefaultData(): Promise<void> {
   }
 
   // ===== 示例题库：Python编程基础（500道题） =====
-  const existingBanks = await db.questionBanks.count()
-  if (existingBanks === 0) {
+  // 检查是否已存在Python编程基础题库（按名称匹配），不存在则创建
+  const allBanks = await db.questionBanks.toArray()
+  const existingPythonBank = allBanks.find(b => b.name === 'Python编程基础')
+  if (!existingPythonBank) {
     await initSampleBank()
   }
 }

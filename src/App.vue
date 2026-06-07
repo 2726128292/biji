@@ -14,7 +14,11 @@ const ui = useUIStore()
 const settings = useSettingsStore()
 
 onMounted(async () => {
-  await initDefaultData()
+  try {
+    await initDefaultData()
+  } catch (e) {
+    console.error('initDefaultData failed:', e)
+  }
   await settings.loadSettings()
 
   // 移动端默认收起侧边栏
