@@ -54,8 +54,8 @@ export class PracticeService {
       const questions = await db.questions.where({ bankId: session.sourceId }).toArray()
       questionIds = questions.map(q => q.id)
     } else if (session.sourceType === 'folder') {
-      const questions = await db.questions.where({ folderId: session.sourceId }).toArray()
-      questionIds = questions.map(q => q.id)
+      // 递归查找该文件夹及其所有子文件夹下的题目
+      questionIds = await this.getQuestionIdsRecursive(session.sourceId)
     } else {
       // 从错题本获取
       const refs = await db.wrongBookQuestionRefs
@@ -72,6 +72,21 @@ export class PracticeService {
     }
 
     return questions
+  }
+
+  /** 递归获取文件夹及其所有子文件夹下的题目ID */
+  private async getQuestionIdsRecursive(folderId: string): Promise<string[]> {
+    const ids: string[] = []
+    // 当前文件夹的题目
+    const directQuestions = await db.questions.where({ folderId }).toArray()
+    ids.push(...directQuestions.map(q => q.id))
+    // 子文件夹
+    const children = await db.folders.where({ parentId: folderId }).toArray()
+    for (const child of children) {
+      const childIds = await this.getQuestionIdsRecursive(child.id)
+      ids.push(...childIds)
+    }
+    return ids
   }
 
   /** 提交答案 */

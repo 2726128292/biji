@@ -155,7 +155,8 @@ function handleBatchImport() {
 }
 
 function handlePractice() {
-  emit('practice', 'folder', selectedFolderId.value!)
+  // 使用 bank 类型查整个题库，而不是只查当前文件夹
+  emit('practice', 'bank', props.bankId)
 }
 
 onMounted(async () => {
