@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+    <title>menu</title>
+    <rect width="24" height="24" fill="#F6F8FC"/>
+    <line x1="3" y1="6" x2="21" y2="6" stroke="#1E293B" stroke-width="2"/><line x1="3" y1="11" x2="21" y2="11" stroke="#1E293B" stroke-width="2"/><line x1="3" y1="16" x2="21" y2="16" stroke="#1E293B" stroke-width="2"/>
+    </svg>

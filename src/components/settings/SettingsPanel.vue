@@ -38,18 +38,40 @@ async function saveSetting(key: string, value: any) {
   await settingsStore.saveSettings({ [key]: value })
 }
 
-function handleBackup() {
-  alert('导出完整备份功能：将下载包含所有数据的JSON备份文件（功能预留）')
+async function handleBackup() {
+  try {
+    const blob = await backupService.createBackup()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `知行笔记_备份_${new Date().toISOString().slice(0, 10)}.zip`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  } catch (e: any) {
+    alert('导出失败：' + e.message)
+  }
 }
 
-function handleRestore() {
+async function handleRestore() {
   const input = document.createElement('input')
   input.type = 'file'
-  input.accept = '.json'
+  input.accept = '.json,.zip'
   input.onchange = async (e: any) => {
     const file = e.target.files[0]
-    if (file) {
-      alert(`恢复备份功能：将从文件 "${file.name}" 恢复数据（功能预留）`)
+    if (!file) return
+    if (!confirm('恢复将覆盖当前所有数据，确定继续？')) return
+    try {
+      const result = await backupService.restoreBackup(file)
+      if (result.success) {
+        alert(result.message)
+        window.location.reload()
+      } else {
+        alert(result.message)
+      }
+    } catch (e: any) {
+      alert('恢复失败：' + e.message)
     }
   }
   input.click()

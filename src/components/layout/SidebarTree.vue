@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUIStore } from '@/stores/uiStore'
 import { noteService } from '@/services/noteService'
@@ -210,12 +210,89 @@ async function handleCreateBank() {
   }
 }
 
+async function handleCreateFolder(parentId: string | null, moduleType: string) {
+  const name = prompt('请输入文件夹名称：', '')
+  if (!name?.trim()) return
+  try {
+    if (moduleType === 'notes') {
+      await noteService.createFolder(parentId, name.trim(), 'notes')
+    } else {
+      await questionService.createChapter(ui.selectedBankId!, parentId, name.trim())
+    }
+    loadTree()
+  } catch (e: any) {
+    alert(e.message || '创建文件夹失败')
+  }
+}
+
+/** 处理右键菜单动作 */
+function handleContextAction(e: Event) {
+  const detail = (e as CustomEvent).detail
+  const { action, targetId } = detail
+  
+  switch (action) {
+    case 'create-subfolder':
+      handleCreateFolder(targetId, ui.currentModule)
+      break
+    case 'create-note':
+      handleCreateNote(targetId)
+      break
+    case 'rename':
+      handleRenameItem(targetId)
+      break
+    case 'delete':
+      handleDeleteItem(targetId)
+      break
+  }
+}
+
+async function handleCreateNote(parentFolderId: string) {
+  const note = await noteService.createNote(parentFolderId, '新笔记')
+  router.push(`/notes/${note.id}`)
+  loadTree()
+}
+
+async function handleRenameItem(id: string) {
+  const newName = prompt('请输入新名称：')
+  if (!newName?.trim()) return
+  try {
+    // 尝试作为folder重命名
+    await noteService.renameFolder(id, newName.trim()).catch(async () => {
+      // 如果失败，尝试作为笔记标题重命名
+      await noteService.updateNoteTitle(id, newName.trim())
+    })
+    loadTree()
+  } catch (e: any) {
+    alert(e.message || '重命名失败')
+  }
+}
+
+async function handleDeleteItem(id: string) {
+  if (!confirm('确定要删除吗？此操作不可恢复。')) return
+  try {
+    // 尝试作为folder删除
+    await noteService.deleteFolder(id)
+    // 同时尝试作为笔记删除
+    try { await noteService.deleteNote(id) } catch { /* ignore */ }
+    loadTree()
+  } catch (e: any) {
+    alert(e.message || '删除失败')
+  }
+}
+
 onMounted(() => {
   loadTree()
   // 默认展开第一层
   if (treeData.value.length > 0) {
     expandedIds.value.add(treeData.value[0].id)
   }
+  
+  // 监听右键菜单操作
+  window.addEventListener('contextmenu-action', handleContextAction as any)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('contextmenu-action', handleContextAction as any)
 })
 
 watch(() => [ui.currentModule, route.path], () => {

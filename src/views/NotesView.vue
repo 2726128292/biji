@@ -68,8 +68,27 @@ export default {
       return root
     },
     handleImportBackup() {
-      // TODO: 实现导入备份功能
-      console.log('导入备份')
+      const input = document.createElement('input')
+      input.type = 'file'
+      input.accept = '.json,.zip'
+      input.onchange = async (e: any) => {
+        const file = e.target.files[0]
+        if (!file) return
+        if (!confirm('恢复将覆盖当前所有数据，确定继续？')) return
+        try {
+          const { backupService } = await import('@/services/backupService')
+          const result = await backupService.restoreBackup(file)
+          if (result.success) {
+            alert(result.message)
+            window.location.reload()
+          } else {
+            alert(result.message)
+          }
+        } catch (e: any) {
+          alert('恢复失败：' + e.message)
+        }
+      }
+      input.click()
     }
   }
 }

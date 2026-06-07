@@ -125,6 +125,16 @@ async function finishSession() {
   phase.value = 'report'
 }
 
+function handleRetryWithWrongBook() {
+  router.push({ path: '/practice', query: { sourceType: 'wrongBook', sourceId: '' } })
+  phase.value = 'setup'
+}
+
+function handleViewWrongBook() {
+  // 跳转到错题本页面（如果有的话）
+  router.push('/questions')
+}
+
 function handleBack() {
   router.push('/questions')
 }
@@ -191,7 +201,9 @@ function handleCloseSetup() {
       v-else-if="phase === 'report' || isReportMode"
       :session-id="sessionId || (route.params.sessionId as string)"
       @back="handleBack"
-      @retry="(id) => { /* re-practice with wrong book */ }"
+      @retry="handleRetryWithWrongBook"
+      @retry-same="() => { phase = 'setup' }"
+      @view-wrong-book="handleViewWrongBook"
     />
   </div>
 </template>

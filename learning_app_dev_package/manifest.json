@@ -1,0 +1,295 @@
+{
+  "package": "知行笔记开发资料包",
+  "version": "1.0",
+  "generated": "2026-06-06",
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 505
+    },
+    {
+      "path": "assets/icons/arrow.svg",
+      "bytes": 326
+    },
+    {
+      "path": "assets/icons/check.svg",
+      "bytes": 311
+    },
+    {
+      "path": "assets/icons/close.svg",
+      "bytes": 316
+    },
+    {
+      "path": "assets/icons/download.svg",
+      "bytes": 432
+    },
+    {
+      "path": "assets/icons/edit.svg",
+      "bytes": 278
+    },
+    {
+      "path": "assets/icons/file.svg",
+      "bytes": 406
+    },
+    {
+      "path": "assets/icons/folder.svg",
+      "bytes": 284
+    },
+    {
+      "path": "assets/icons/menu.svg",
+      "bytes": 387
+    },
+    {
+      "path": "assets/icons/more.svg",
+      "bytes": 415
+    },
+    {
+      "path": "assets/icons/play.svg",
+      "bytes": 224
+    },
+    {
+      "path": "assets/icons/plus.svg",
+      "bytes": 325
+    },
+    {
+      "path": "assets/icons/search.svg",
+      "bytes": 383
+    },
+    {
+      "path": "assets/icons/settings.svg",
+      "bytes": 344
+    },
+    {
+      "path": "assets/icons/star.svg",
+      "bytes": 331
+    },
+    {
+      "path": "assets/icons/trash.svg",
+      "bytes": 425
+    },
+    {
+      "path": "assets/icons/upload.svg",
+      "bytes": 427
+    },
+    {
+      "path": "assets/illustrations/backup.svg",
+      "bytes": 1006
+    },
+    {
+      "path": "assets/illustrations/empty-state.svg",
+      "bytes": 1050
+    },
+    {
+      "path": "assets/illustrations/offline-ready.svg",
+      "bytes": 1008
+    },
+    {
+      "path": "assets/logo/app-icon-192.png",
+      "bytes": 4221
+    },
+    {
+      "path": "assets/logo/app-icon-512.png",
+      "bytes": 12714
+    },
+    {
+      "path": "assets/logo/app-icon.svg",
+      "bytes": 540
+    },
+    {
+      "path": "docs/UI界面总览.png",
+      "bytes": 256500
+    },
+    {
+      "path": "docs/UI界面稿索引.md",
+      "bytes": 824
+    },
+    {
+      "path": "docs/开发文档.docx",
+      "bytes": 585518
+    },
+    {
+      "path": "docs/开发文档.md",
+      "bytes": 7637
+    },
+    {
+      "path": "docs/开发文档.pdf",
+      "bytes": 792494
+    },
+    {
+      "path": "docs/资源说明.md",
+      "bytes": 615
+    },
+    {
+      "path": "prototype/index.html",
+      "bytes": 3298
+    },
+    {
+      "path": "specs/data-model.md",
+      "bytes": 2545
+    },
+    {
+      "path": "specs/pwa-deployment.md",
+      "bytes": 697
+    },
+    {
+      "path": "specs/question-rules.md",
+      "bytes": 1012
+    },
+    {
+      "path": "specs/ui-component-map.md",
+      "bytes": 818
+    },
+    {
+      "path": "ui/png/desktop/01_notes_home.png",
+      "bytes": 49626
+    },
+    {
+      "path": "ui/png/desktop/02_note_editor.png",
+      "bytes": 87609
+    },
+    {
+      "path": "ui/png/desktop/03_settings_panel.png",
+      "bytes": 63071
+    },
+    {
+      "path": "ui/png/desktop/04_question_bank_home.png",
+      "bytes": 60138
+    },
+    {
+      "path": "ui/png/desktop/05_question_bank_detail.png",
+      "bytes": 80727
+    },
+    {
+      "path": "ui/png/desktop/06_create_question_modal.png",
+      "bytes": 58088
+    },
+    {
+      "path": "ui/png/desktop/07_practice_setup.png",
+      "bytes": 69568
+    },
+    {
+      "path": "ui/png/desktop/08_memorize_mode.png",
+      "bytes": 70373
+    },
+    {
+      "path": "ui/png/desktop/09_quiz_single.png",
+      "bytes": 46282
+    },
+    {
+      "path": "ui/png/desktop/10_quiz_feedback_wrong.png",
+      "bytes": 58204
+    },
+    {
+      "path": "ui/png/desktop/11_practice_report.png",
+      "bytes": 51373
+    },
+    {
+      "path": "ui/png/desktop/12_wrongbook_mirror.png",
+      "bytes": 71297
+    },
+    {
+      "path": "ui/png/desktop/13_backup_restore.png",
+      "bytes": 64648
+    },
+    {
+      "path": "ui/png/desktop/14_version_history.png",
+      "bytes": 58837
+    },
+    {
+      "path": "ui/png/mobile/01_note_editor_mobile.png",
+      "bytes": 26587
+    },
+    {
+      "path": "ui/png/mobile/02_question_bank_mobile.png",
+      "bytes": 31343
+    },
+    {
+      "path": "ui/png/mobile/03_quiz_single_mobile.png",
+      "bytes": 29871
+    },
+    {
+      "path": "ui/png/mobile/04_wrongbook_mobile.png",
+      "bytes": 27332
+    },
+    {
+      "path": "ui/png/mobile/05_bottom_sheet_mobile.png",
+      "bytes": 19973
+    },
+    {
+      "path": "ui/svg/desktop/01_notes_home.svg",
+      "bytes": 4495
+    },
+    {
+      "path": "ui/svg/desktop/02_note_editor.svg",
+      "bytes": 7865
+    },
+    {
+      "path": "ui/svg/desktop/03_settings_panel.svg",
+      "bytes": 7588
+    },
+    {
+      "path": "ui/svg/desktop/04_question_bank_home.svg",
+      "bytes": 8542
+    },
+    {
+      "path": "ui/svg/desktop/05_question_bank_detail.svg",
+      "bytes": 9930
+    },
+    {
+      "path": "ui/svg/desktop/06_create_question_modal.svg",
+      "bytes": 7109
+    },
+    {
+      "path": "ui/svg/desktop/07_practice_setup.svg",
+      "bytes": 6328
+    },
+    {
+      "path": "ui/svg/desktop/08_memorize_mode.svg",
+      "bytes": 7817
+    },
+    {
+      "path": "ui/svg/desktop/09_quiz_single.svg",
+      "bytes": 4633
+    },
+    {
+      "path": "ui/svg/desktop/10_quiz_feedback_wrong.svg",
+      "bytes": 4762
+    },
+    {
+      "path": "ui/svg/desktop/11_practice_report.svg",
+      "bytes": 5877
+    },
+    {
+      "path": "ui/svg/desktop/12_wrongbook_mirror.svg",
+      "bytes": 9789
+    },
+    {
+      "path": "ui/svg/desktop/13_backup_restore.svg",
+      "bytes": 5226
+    },
+    {
+      "path": "ui/svg/desktop/14_version_history.svg",
+      "bytes": 6117
+    },
+    {
+      "path": "ui/svg/mobile/01_note_editor_mobile.svg",
+      "bytes": 3349
+    },
+    {
+      "path": "ui/svg/mobile/02_question_bank_mobile.svg",
+      "bytes": 6329
+    },
+    {
+      "path": "ui/svg/mobile/03_quiz_single_mobile.svg",
+      "bytes": 3724
+    },
+    {
+      "path": "ui/svg/mobile/04_wrongbook_mobile.svg",
+      "bytes": 4719
+    },
+    {
+      "path": "ui/svg/mobile/05_bottom_sheet_mobile.svg",
+      "bytes": 3651
+    }
+  ]
+}

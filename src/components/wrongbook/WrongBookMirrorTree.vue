@@ -73,15 +73,19 @@ function isFolderExpanded(folderId: string): boolean {
 const questionsByFolder = computed(() => {
   const groups = new Map<string, { folderName: string; questions: QuestionWithRef[] }>()
 
-  // 从镜像树获取文件夹名称
+  // 从镜像树递归获取文件夹名称
   function getFolderName(folderId: string): string {
-    for (const node of mirrorTree.value) {
-      if (node.folderId === folderId) return node.name
-      for (const child of node.children || []) {
-        if (child.folderId === folderId) return child.name
+    function search(nodes: MirrorTreeNode[]): string | null {
+      for (const node of nodes) {
+        if (node.folderId === folderId) return node.name
+        if (node.children?.length) {
+          const found = search(node.children)
+          if (found) return found
+        }
       }
+      return null
     }
-    return '未知章节'
+    return search(mirrorTree.value) || '未知章节'
   }
 
   // 分组

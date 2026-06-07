@@ -124,7 +124,7 @@ function formatAnswer(q: Question): string {
         <!-- 折叠答案区 -->
         <div class="answer-section">
           <button class="answer-toggle" @click="toggleAnswer(question.id)">
-            答案：{{ isExpanded(question.id) ? formatAnswer(question) : '建立可靠连接' }}
+            答案：{{ isExpanded(question.id) ? formatAnswer(question) : '点击查看答案' }}
           </button>
           <transition name="slide-v">
             <div v-if="isExpanded(question.id)" class="answer-detail">

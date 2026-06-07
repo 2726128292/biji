@@ -149,15 +149,14 @@ onMounted(() => {
                 v-for="chapter in chapterTree"
                 :key="chapter.id"
                 class="chapter-item"
-                @click="toggleChapter(chapter.id)"
               >
                 <input
                   type="checkbox"
                   :checked="selectedChapterIds.includes(chapter.id)"
+                  @change="toggleChapter(chapter.id)"
                   class="chapter-checkbox"
-                  @click.stop
                 />
-                <span>{{ chapter.name }}</span>
+                <label @click="toggleChapter(chapter.id)">{{ chapter.name }}</label>
               </div>
             </template>
             <p v-else class="no-chapters">该题库暂无章节</p>

@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { questionService } from '@/services/questionService'
 import QuestionCard from './QuestionCard.vue'
+import QuestionFormModal from './QuestionFormModal.vue'
 import type { Folder, Question } from '@/types/database'
 
 const props = defineProps<{
@@ -18,6 +19,11 @@ const chapterTree = ref<any[]>([])
 const questions = ref<Question[]>([])
 const selectedFolderId = ref<string | null>(props.folderId || null)
 const loading = ref(false)
+
+// 题目表单弹窗
+const showQuestionForm = ref(false)
+const questionFormMode = ref<'create' | 'edit'>('create')
+const editingQuestion = ref<Question | undefined>(undefined)
 
 // 面包屑数据
 const bankName = ref('')
@@ -89,11 +95,63 @@ async function handleCreateChapter(parentId: string | null) {
 }
 
 async function handleCreateQuestion() {
-  // 通过事件或store触发弹窗
+  questionFormMode.value = 'create'
+  editingQuestion.value = undefined
+  showQuestionForm.value = true
+}
+
+function handleEditQuestion(q: Question) {
+  questionFormMode.value = 'edit'
+  editingQuestion.value = q
+  showQuestionForm.value = true
+}
+
+function handleQuestionSaved() {
+  showQuestionForm.value = false
+  loadQuestions()
 }
 
 function handleBatchImport() {
-  emit('batchImport')
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.accept = '.json,.txt,.md'
+  input.onchange = async (e: any) => {
+    const file = e.target.files[0]
+    if (!file) return
+    try {
+      const text = await file.text()
+      // 简单JSON数组格式：[{type, content, options, answer, explanation}]
+      if (file.name.endsWith('.json')) {
+        const items = JSON.parse(text)
+        if (!Array.isArray(items)) {
+          alert('JSON文件格式不正确，需要是题目数组')
+          return
+        }
+        const folderId = selectedFolderId.value || chapterTree.value[0]?.id
+        if (!folderId) { alert('请先选择一个章节'); return }
+
+        let count = 0
+        for (const item of items) {
+          if (!item.content) continue
+          await questionService.createQuestion(props.bankId, folderId, {
+            type: item.type || 'single',
+            content: item.content,
+            options: item.options || [],
+            answer: item.answer ?? true,
+            explanation: item.explanation || ''
+          })
+          count++
+        }
+        alert(`成功导入 ${count} 道题目`)
+        loadQuestions()
+      } else {
+        alert('仅支持JSON格式导入。请使用标准格式：[{type, content, options, answer, explanation}]')
+      }
+    } catch (e: any) {
+      alert('导入失败：' + e.message)
+    }
+  }
+  input.click()
 }
 
 function handlePractice() {
@@ -200,6 +258,17 @@ watch(() => props.folderId, async (val) => {
 
       <div v-else class="loading-state">加载中...</div>
     </main>
+
+    <!-- 创建/编辑题目弹窗 -->
+    <QuestionFormModal
+      :show="showQuestionForm"
+      :mode="questionFormMode"
+      :question="editingQuestion"
+      :bank-id="bankId"
+      :folder-id="selectedFolderId || chapterTree[0]?.id || ''"
+      @close="showQuestionForm = false"
+      @saved="handleQuestionSaved"
+    />
   </div>
 </template>
 
