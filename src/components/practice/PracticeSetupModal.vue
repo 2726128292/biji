@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { wrongBookService } from '@/services/wrongBookService'
 import { questionService } from '@/services/questionService'
 import type { PracticeConfig, WrongBook } from '@/types/database'
+
+const route = useRoute()
 
 const props = defineProps<{
   show: boolean
@@ -17,7 +20,10 @@ const emit = defineEmits<{
 
 // ===== 表单状态 =====
 const order = ref<'random' | 'sequential'>('random')
-const mode = ref<'memorize' | 'quiz'>('quiz')
+// 从路由参数获取初始模式
+const mode = ref<'memorize' | 'quiz'>(
+  (route.query.mode as string) === 'memorize' ? 'memorize' : 'quiz'
+)
 const countMode = ref<'all' | 'custom'>('all')
 const customCount = ref(20)
 const scopeType = ref<'bankAll' | 'folderTree' | 'chapters' | 'all'>('bankAll')

@@ -43,6 +43,12 @@ async function handleStart(config: PracticeConfig) {
   sessionId.value = session.id
   questions.value = await practiceService.getQuestionQueue(session)
 
+  if (questions.value.length === 0) {
+    alert('没有找到题目，请先添加题目后再开始练习')
+    phase.value = 'setup'
+    return
+  }
+
   if (config.order === 'random') {
     // Fisher-Yates shuffle
     for (let i = questions.value.length - 1; i > 0; i--) {
